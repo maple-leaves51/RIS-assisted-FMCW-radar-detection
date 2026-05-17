@@ -1,5 +1,51 @@
 # Paper Formula Notes
 
+## Stage 3.4：工程优化目标与相位搜索公式
+
+当前工程主目标不再使用 `trace(Heff)` 或单纯路径增益代理，而是直接使用 ZF 预编码后的 SNR：
+
+```text
+Phi = diag(v), |v_i| = 1
+Heff = Hsr' * Phi * Hrd * Phi' * Hsr
+B_zf = normalized_pinv_precoder(Heff, Ptx)
+SNR_zf = ||Heff * B_zf||_F^2 / sigma^2
+```
+
+其中：
+
+- `Hsr`: `Nr x Nt`
+- `Hrd`: `Nr x Nr`
+- `v`: `Nr x 1`
+- `Phi`: `Nr x Nr`
+- `Heff`: `Nt x Nt`
+- `B_zf`: `Nt x Nt`
+- `Ptx`: 线性发射功率，单位 W
+- `sigma^2`: 线性噪声功率，单位 W
+
+`evaluate_ris_objective.m` 当前支持的主目标：
+
+```text
+path_gain = ||Heff||_F^2
+zf_snr = SNR_zf
+zf_snr_with_condition_penalty = SNR_zf / (1 + alpha * log10(cond(Heff))^2)
+```
+
+Stage 3.4 中 `optimize_ris_objective_driven.m` 采用多初值坐标相位搜索。对第 `i` 个 RIS 单元，固定其他相位，只在候选相位集合中选择使指定 objective 最大的相位：
+
+```text
+v_i <- arg max_{exp(j theta), theta in candidateGrid} objective(v)
+```
+
+`searchMode = "fixed_grid"` 使用固定全局相位网格；`searchMode = "coarse_to_fine"` 使用三层候选集：
+
+```text
+第1层：全局粗搜，例如 16 或 24 个相位点
+第2层：围绕当前最优相位 ±pi/12 局部细搜
+第3层：围绕当前最优相位 ±pi/48 更细局部搜索
+```
+
+该优化器不是论文严格 ADMM，也不声称优化论文二次型代理目标。它是当前工程主线的 ZF-SNR-driven RIS phase optimizer。
+
 ## Stage 3.3：ZF-SNR 作为主目标
 
 当前主线目标不再是单纯路径增益：

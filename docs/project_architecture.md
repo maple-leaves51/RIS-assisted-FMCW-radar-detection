@@ -1,5 +1,25 @@
 # Project Architecture
 
+## Stage 3.4：ZF-SNR 驱动优化器强化与公平稳定性验证
+
+本阶段继续保持当前工程结构，不进入 RD 图、图3或图4复现。主线目标明确为 `objectiveType = "zf_snr"`，即直接优化 ZF 预编码归一化后的 SNR。`path_gain` 只作为辅助观察指标，`quadratic ADMM proxy` 只作为学习和诊断模块，不作为后续 SNR 曲线主算法。
+
+本阶段新增或修改文件：
+
+- `functions/optimize_ris_objective_driven.m`：增加 `searchMode` 参数，支持 `"fixed_grid"` 和 `"coarse_to_fine"`。`coarse_to_fine` 采用三层坐标相位搜索：全局粗搜、局部细搜、更小范围细搜；支持多 start、多 sweep、early stop，并记录 best-so-far 历史曲线。该函数现在允许 `options.initialV` 为 `Nr x K` 初值矩阵，用于公平复用同一组随机初值。
+- `main/main_stage3_optimizer_comparison.m`：新增 Stage 3.4 算法对照脚本。每个 trial 使用同一组 `Hsr/Hrd` 和同一组 start phases，对比 `random_single`、`random_best_of_numStarts`、`fixed_grid_zf_snr`、`coarse_to_fine_zf_snr`、`coarse_to_fine_zf_snr_with_condition_penalty`。
+- `outputs/logs/stage3_optimizer_comparison_*.txt`：保存 30 次随机信道对照统计日志。
+- `outputs/data/stage3_optimizer_comparison_*.mat`：保存 `resultTable` 和 `summaryTable`。
+- `outputs/figures/stage3_optimizer_comparison.png/.fig`：保存 SNR、improvement、condition number、runtime、SNR-vs-cond、ZF raw power 的综合诊断图。
+
+当前主算法候选：
+
+- 首选候选：`coarse_to_fine_zf_snr_with_condition_penalty`。在 30 次 trial 的最新公平对照中，它平均 SNR、平均条件数和平均 ZF raw power 略优，但相对 `coarse_to_fine_zf_snr` 的优势很小。
+- 稳健候选：`coarse_to_fine_zf_snr`。不引入条件数惩罚，目标最直接，且相对 `random_single` 和 `random_best_of_numStarts` 的 failure count 均为 0。
+- 快速基线：`fixed_grid_zf_snr`。运行时间约为 coarse-to-fine 的一半，结果略低但仍明显优于随机相位。
+
+后续进入图3/图4前，必须继续保持同一统计口径：每个方法在同一 trial 中共享同一信道和同一组随机初值，避免把多随机初值带来的收益误判为算法收益。
+
 ## Stage 3.3：ZF-SNR 主线优化与稳定性诊断
 
 本轮在不复现图3/图4的前提下，强化 RIS 相位优化诊断链路：

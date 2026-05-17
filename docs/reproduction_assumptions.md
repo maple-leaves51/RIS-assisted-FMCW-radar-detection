@@ -1,5 +1,19 @@
 # Reproduction Assumptions
 
+## Stage 3.4：ZF-SNR 主线优化假设
+
+1. 当前工程把 `zf_snr` 作为 RIS 相位优化主目标，而不是把 `path_gain = ||Heff||_F^2` 作为主目标。原因是 Stage 3 诊断已经显示：path gain 增大可能导致 `Heff` 条件数变差，进而使 ZF 归一化后的 SNR 下降。
+
+2. `quadratic ADMM approximation` 仅保留为论文 ADMM 思想的学习模块。由于当前工程维度和真实目标使 `||Heff||_F^2` 对 `v` 呈四次形式，现有二次代理目标不能代表真实 ZF-SNR 目标。
+
+3. Stage 3.4 的主优化器采用坐标相位搜索，而不是严格论文 ADMM。该选择属于“合理工程复现假设”：先保证当前模型下真实工程目标能稳定改善，再考虑是否重新推导更贴近论文的闭式 ADMM。
+
+4. 多随机种子稳定性验证中，每个 trial 使用不同信道种子。`generate_channels` 当前仍可根据 `params.repro.rngSeed` 重置随机数，但脚本会在每个 trial 设置不同 `rngSeed`，因此不会重复生成同一信道。
+
+5. 为公平比较，Stage 3.4 中 `random_best_of_numStarts` 和所有优化器使用同一个 trial 内的同一组随机初值 `startPhases`。这样可以区分“多初值筛选带来的收益”和“相位优化本身带来的收益”。
+
+6. `zf_snr_with_condition_penalty` 中的 `alpha = 0.05` 是当前阶段的经验参数，不是论文给定参数。最新 30 次 trial 显示它略优于纯 `zf_snr`，但优势较小，后续仍需在不同 `Nr`、发射功率和噪声设定下复核。
+
 ## Stage 3.3：后续算法主线假设
 
 1. 后续 RIS 相位优化主线采用 `objectiveType = "zf_snr"`。

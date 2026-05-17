@@ -1,5 +1,40 @@
 # TODO
 
+## Stage 3.4 完成状态
+
+### 已完成
+
+- [x] 在 `optimize_ris_objective_driven.m` 中增加 `searchMode = "fixed_grid"`。
+- [x] 在 `optimize_ris_objective_driven.m` 中增加 `searchMode = "coarse_to_fine"`。
+- [x] 支持 `objectiveType = "zf_snr"`。
+- [x] 支持 `objectiveType = "zf_snr_with_condition_penalty"`。
+- [x] 记录 best-so-far objective、SNR、path gain、condition number、ZF raw power。
+- [x] 支持 `options.initialV` 传入多初值矩阵，保证 random-best 和优化器使用同一组初值。
+- [x] 新增 `main/main_stage3_optimizer_comparison.m`。
+- [x] 完成 30 个随机信道 trial 的公平稳定性验证。
+- [x] 保存 `.mat` 数据、`.txt` 日志和综合统计图。
+- [x] 明确记录 failure count、runtime、condition number 和 ZF raw power。
+
+### 当前结论
+
+- [x] `coarse_to_fine_zf_snr` 相比 `random_single` 和 `random_best_of_numStarts` 平均 SNR 均有明显提升。
+- [x] `coarse_to_fine_zf_snr` 在 30 个 trial 中相对两个随机基线的 failure count 均为 `0`。
+- [x] `coarse_to_fine_zf_snr_with_condition_penalty` 本轮平均 SNR 和平均条件数略优，可作为后续候选主算法，但需要在不同 `Nr` 和功率扫描下继续验证。
+
+### 暂不进入
+
+- [ ] 暂不复现图3。
+- [ ] 暂不复现图4。
+- [ ] 暂不做 RD 图。
+- [ ] 暂不把 quadratic ADMM proxy 作为主结果算法。
+
+### 下一步建议
+
+- [ ] 在进入图3前，固定主算法选择：`coarse_to_fine_zf_snr` 或 `coarse_to_fine_zf_snr_with_condition_penalty`。
+- [ ] 增加 `Nr` 扫描前的小规模稳定性测试，检查 `Nr` 改变后条件数和 ZF raw power 是否失控。
+- [ ] 增加发射功率扫描前的小规模测试，确认优化后的 SNR 随功率保持单调。
+- [ ] 后续正式曲线应提高 Monte Carlo 次数，并保存每个 trial 的失败样本用于 debug。
+
 ## Stage 3.3 完成状态
 
 ### 已完成

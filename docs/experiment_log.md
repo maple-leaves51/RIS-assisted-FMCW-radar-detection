@@ -1,5 +1,36 @@
 # Experiment Log
 
+## 2026-05-17 Stage 3.4 ZF-SNR 优化器公平稳定性验证
+
+- 运行脚本：`main/main_stage3_optimizer_comparison.m`
+- 最新输出日志：`outputs/logs/stage3_optimizer_comparison_20260517_194837.txt`
+- 最新输出数据：`outputs/data/stage3_optimizer_comparison_20260517_194837.mat`
+- 最新输出图：
+  - `outputs/figures/stage3_optimizer_comparison.png`
+  - `outputs/figures/stage3_optimizer_comparison.fig`
+- trials：`30`
+- numStarts：`3`
+- 主要目标：`zf_snr`
+- 公平性设置：每个 trial 中 `random_best_of_numStarts`、`fixed_grid_zf_snr`、`coarse_to_fine_zf_snr`、`coarse_to_fine_zf_snr_with_condition_penalty` 使用同一组 `startPhases`。
+
+统计结果摘要：
+
+| 方法 | mean SNR dB | median SNR dB | mean improvement vs random single | mean improvement vs random best | failure vs random single | failure vs random best | mean cond | mean ZF raw power | mean path gain | mean runtime |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| random_single | `-85.640` | `-84.887` | `0` | `-4.187` | `30` | `30` | `19.191` | `1.164e10` | `2.184e-07` | `0` |
+| random_best_of_numStarts | `-81.453` | `-81.401` | `4.187` | `0` | `11` | `30` | `8.604` | `6.557e08` | `2.292e-07` | `0` |
+| fixed_grid_zf_snr | `-72.694` | `-72.811` | `12.945` | `8.758` | `0` | `0` | `2.181` | `7.747e07` | `3.114e-07` | `0.492 s` |
+| coarse_to_fine_zf_snr | `-72.591` | `-72.579` | `13.049` | `8.862` | `0` | `0` | `2.146` | `7.501e07` | `3.139e-07` | `0.913 s` |
+| coarse_to_fine_zf_snr_with_condition_penalty | `-72.568` | `-72.534` | `13.072` | `8.885` | `0` | `0` | `2.122` | `7.456e07` | `3.127e-07` | `0.956 s` |
+
+验收结论：
+
+- `coarse_to_fine_zf_snr` 平均 SNR 高于 `random_single`，且 failure count 为 `0`。
+- `coarse_to_fine_zf_snr` 平均 SNR 高于同 numStarts 的 `random_best_of_numStarts`，且 failure count 为 `0`。
+- `coarse_to_fine_zf_snr_with_condition_penalty` 在本轮统计中平均 SNR、平均条件数和平均 ZF raw power 略优，但优势很小，暂定为“候选主算法”，后续还需在不同 `Nr` 和功率扫描下复核。
+- `fixed_grid_zf_snr` 运行更快，平均 SNR 略低，可作为快速诊断基线。
+- `random_best_of_numStarts` 的 `failureCountVsRandomBest = 30` 是因为该列把“相对自身提升 <= 0”计为失败，对基线自身没有算法判别意义。
+
 ## 2026-05-17 Stage 3.3 ZF-SNR 稳定性测试
 
 - 运行脚本：`main/main_stage3_zf_snr_stability.m`

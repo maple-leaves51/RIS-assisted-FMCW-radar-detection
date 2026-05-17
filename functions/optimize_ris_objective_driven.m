@@ -11,7 +11,8 @@ function [vBest, info] = optimize_ris_objective_driven(Hsr, Hrd, params, objecti
 %                       Default is "zf_snr".
 %       options       - Optional struct:
 %                       initialV, numStarts, maxSweeps, phaseGridSize,
-%                       tolerance, conditionPenaltyAlpha, rngSeed.
+%                       tolerance, conditionPenaltyAlpha, rngSeed,
+%                       searchMode. initialV can be Nr x 1 or Nr x K.
 %
 %   Outputs:
 %       vBest - Best unit-modulus RIS phase vector, size Nr x 1.
@@ -22,10 +23,11 @@ function [vBest, info] = optimize_ris_objective_driven(Hsr, Hrd, params, objecti
 %               sweepHistory, numIter, converged, method, and objectiveType.
 %
 %   Method:
-%       Multi-start coordinate phase search. For each coordinate, the method
-%       evaluates a fixed phase grid and accepts the phase that maximizes the
-%       selected objective. This is not ADMM. It is an engineering optimizer
-%       whose optimized objective is exactly the requested objectiveType.
+%       Multi-start coordinate phase search. searchMode="fixed_grid" uses a
+%       global fixed phase grid. searchMode="coarse_to_fine" first searches a
+%       global coarse grid, then local grids around the best phase. This is not
+%       ADMM. It is an engineering optimizer whose optimized objective is
+%       exactly the requested objectiveType.
 
 arguments
     Hsr {mustBeNumeric}
@@ -45,6 +47,12 @@ end
 numStarts = get_option(options, "numStarts", 5);
 maxSweeps = get_option(options, "maxSweeps", 12);
 phaseGridSize = get_option(options, "phaseGridSize", 24);
+searchMode = string(get_option(options, "searchMode", "fixed_grid"));
+coarseGridSize = get_option(options, "coarseGridSize", phaseGridSize);
+fineGridSize = get_option(options, "fineGridSize", 16);
+finerGridSize = get_option(options, "finerGridSize", 12);
+fineHalfWidth = get_option(options, "fineHalfWidth", pi/12);
+finerHalfWidth = get_option(options, "finerHalfWidth", pi/48);
 tolerance = get_option(options, "tolerance", 1e-5);
 conditionPenaltyAlpha = get_option(options, "conditionPenaltyAlpha", 0.05);
 objectiveOptions = struct("conditionPenaltyAlpha", conditionPenaltyAlpha);
@@ -54,11 +62,18 @@ if isfield(options, "rngSeed")
 end
 
 initialCandidates = cell(numStarts, 1);
+firstRandomStart = 1;
 if isfield(options, "initialV")
-    initialCandidates{1} = project_unit_modulus(options.initialV(:));
-    firstRandomStart = 2;
-else
-    firstRandomStart = 1;
+    initialV = options.initialV;
+    if size(initialV, 1) ~= Nr
+        error("RIS_MIMO_FMCW:DimensionMismatch", ...
+            "initialV must have Nr rows. Got initialV %s and Nr=%d.", mat2str(size(initialV)), Nr);
+    end
+    numProvidedStarts = min(size(initialV, 2), numStarts);
+    for startIdx = 1:numProvidedStarts
+        initialCandidates{startIdx} = project_unit_modulus(initialV(:, startIdx));
+    end
+    firstRandomStart = numProvidedStarts + 1;
 end
 for startIdx = firstRandomStart:numStarts
     initialCandidates{startIdx} = exp(1j .* 2 .* pi .* rand(Nr, 1));
@@ -86,6 +101,8 @@ bestMetrics = struct();
 convergedAny = false;
 phaseGrid = linspace(0, 2*pi, phaseGridSize + 1).';
 phaseGrid(end) = [];
+coarseGrid = linspace(0, 2*pi, coarseGridSize + 1).';
+coarseGrid(end) = [];
 
 for startIdx = 1:numStarts
     v = initialCandidates{startIdx};
@@ -101,17 +118,8 @@ for startIdx = 1:numStarts
             bestLocalObjective = currentObjective;
             bestLocalPhase = v(elementIdx);
 
-            for phaseIdx = 1:numel(phaseGrid)
-                candidateV = v;
-                candidateV(elementIdx) = exp(1j .* phaseGrid(phaseIdx));
-                candidateObjective = evaluate_ris_objective( ...
-                    Hsr, Hrd, candidateV, params, objectiveType, objectiveOptions);
-
-                if candidateObjective > bestLocalObjective
-                    bestLocalObjective = candidateObjective;
-                    bestLocalPhase = candidateV(elementIdx);
-                end
-            end
+            [bestLocalObjective, bestLocalPhase] = search_coordinate_phase( ...
+                v, elementIdx, bestLocalObjective, bestLocalPhase);
 
             if bestLocalObjective > currentObjective
                 v(elementIdx) = bestLocalPhase;
@@ -142,6 +150,7 @@ vBest = project_unit_modulus(bestV);
 
 info = struct();
 info.method = "multi_start_coordinate_phase_search";
+info.searchMode = searchMode;
 info.objectiveType = objectiveType;
 info.objectiveHistory = objectiveHistory(1:recordIdx);
 info.bestObjectiveHistory = bestObjectiveHistory(1:recordIdx);
@@ -161,6 +170,11 @@ info.converged = convergedAny;
 info.numStarts = numStarts;
 info.maxSweeps = maxSweeps;
 info.phaseGridSize = phaseGridSize;
+info.coarseGridSize = coarseGridSize;
+info.fineGridSize = fineGridSize;
+info.finerGridSize = finerGridSize;
+info.fineHalfWidth = fineHalfWidth;
+info.finerHalfWidth = finerHalfWidth;
 info.conditionPenaltyAlpha = conditionPenaltyAlpha;
 info.initialObjective = info.objectiveHistory(1);
 info.finalObjective = finalObjective;
@@ -196,6 +210,46 @@ info.unitModulusMaxError = max(abs(abs(vBest) - 1));
         bestCondHistory(newRecordIdx) = newBestMetrics.condHeff;
         bestZfRawPowerHistory(newRecordIdx) = newBestMetrics.zfRawPower;
     end
+
+    function [bestObjectiveOut, bestPhaseOut] = search_coordinate_phase( ...
+            currentV, elementIdx, initialObjective, initialPhase)
+        switch searchMode
+            case "fixed_grid"
+                [bestObjectiveOut, bestPhaseOut] = evaluate_phase_grid( ...
+                    currentV, elementIdx, phaseGrid, initialObjective, initialPhase);
+            case "coarse_to_fine"
+                [coarseObjective, coarsePhase] = evaluate_phase_grid( ...
+                    currentV, elementIdx, coarseGrid, initialObjective, initialPhase);
+                fineCenter = angle(coarsePhase);
+                fineGrid = local_phase_grid(fineCenter, fineHalfWidth, fineGridSize);
+                [fineObjective, finePhase] = evaluate_phase_grid( ...
+                    currentV, elementIdx, fineGrid, coarseObjective, coarsePhase);
+                finerCenter = angle(finePhase);
+                finerGrid = local_phase_grid(finerCenter, finerHalfWidth, finerGridSize);
+                [bestObjectiveOut, bestPhaseOut] = evaluate_phase_grid( ...
+                    currentV, elementIdx, finerGrid, fineObjective, finePhase);
+            otherwise
+                error("RIS_MIMO_FMCW:UnsupportedSearchMode", ...
+                    "Unsupported searchMode: %s.", searchMode);
+        end
+    end
+
+    function [bestObjectiveOut, bestPhaseOut] = evaluate_phase_grid( ...
+            currentV, elementIdx, gridPhases, initialObjective, initialPhase)
+        bestObjectiveOut = initialObjective;
+        bestPhaseOut = initialPhase;
+        for phaseIdx = 1:numel(gridPhases)
+            candidateV = currentV;
+            candidateV(elementIdx) = exp(1j .* gridPhases(phaseIdx));
+            candidateObjective = evaluate_ris_objective( ...
+                Hsr, Hrd, candidateV, params, objectiveType, objectiveOptions);
+
+            if candidateObjective > bestObjectiveOut
+                bestObjectiveOut = candidateObjective;
+                bestPhaseOut = candidateV(elementIdx);
+            end
+        end
+    end
 end
 
 function value = get_option(options, fieldName, defaultValue)
@@ -204,6 +258,15 @@ if isfield(options, fieldName)
 else
     value = defaultValue;
 end
+end
+
+function phases = local_phase_grid(centerPhase, halfWidth, numPoints)
+if numPoints <= 1
+    phases = centerPhase;
+else
+    phases = centerPhase + linspace(-halfWidth, halfWidth, numPoints).';
+end
+phases = mod(phases, 2*pi);
 end
 
 function v = project_unit_modulus(z)

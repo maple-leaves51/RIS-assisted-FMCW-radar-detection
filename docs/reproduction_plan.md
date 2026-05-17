@@ -1,5 +1,24 @@
 # Reproduction Plan
 
+## Stage 3.4 后的路线调整
+
+当前主线不再把论文 ADMM 闭式公式作为短期硬约束，而是先采用能稳定改善当前工程目标的 ZF-SNR-driven RIS phase optimizer。论文 ADMM、路径增益最大化和单位模约束仍作为理论参考，但后续图3/图4的主算法暂定从以下两个候选中选择：
+
+1. `coarse_to_fine_zf_snr`
+   - 优点：目标最直接，解释最清楚，优化的就是 ZF-SNR。
+   - 缺点：相对 fixed grid 运行时间约翻倍。
+
+2. `coarse_to_fine_zf_snr_with_condition_penalty`
+   - 优点：Stage 3.4 最新 30 trial 中平均 SNR、平均条件数和平均 ZF raw power 略优。
+   - 缺点：含经验参数 `alpha = 0.05`，后续需要确认不同 `Nr`、不同发射功率下是否稳定。
+
+进入图3/图4前需要完成：
+
+- 用多个 `Nr` 小规模扫描确认主算法不会因 RIS 单元数变化导致条件数或 ZF raw power 失控。
+- 用多个发射功率小规模扫描确认主算法输出的 SNR 随功率单调增加。
+- 明确 Monte Carlo 次数、随机种子管理、失败样本记录方式。
+- 继续保留 `random_single` 和 `random_best_of_numStarts` 作为公平基线，防止把多初值收益误判为优化算法收益。
+
 ## 总体目标
 
 逐步复现论文中的 RIS 辅助 MIMO-FMCW 雷达非视距目标参数估计流程，包括系统模型、ZF 预编码、RIS 相移优化、SNR 对比和距离-多普勒处理。

@@ -1,5 +1,27 @@
 # Debug Log
 
+## 2026-05-17 Stage 3.4 优化器公平性与运行时间调整
+
+问题 1：初版 `main_stage3_optimizer_comparison.m` 中，`random_best_of_numStarts` 和优化器使用的随机初值数量相同，但优化器内部除第一个初值外会自行生成其余初值，导致两者并非完全相同的 start phases。
+
+定位：
+- 该问题不会使结果硬编码或失效，但会削弱“公平对比”的严格性。
+- 如果优化器恰好生成了更好的初值，部分收益可能被误归因于优化过程。
+
+修复：
+- 修改 `functions/optimize_ris_objective_driven.m`，允许 `options.initialV` 传入 `Nr x K` 初值矩阵。
+- 修改 `main/main_stage3_optimizer_comparison.m`，让 `random_best_of_numStarts` 和所有优化器复用同一组 `startPhases`。
+
+验证：
+- MATLAB Code Analyzer 对 `optimize_ris_objective_driven.m` 和 `main_stage3_optimizer_comparison.m` 均无 warning。
+- 重新运行 30 trial 对照，`coarse_to_fine_zf_snr` 和带 condition penalty 的版本均明显优于两个随机基线。
+
+问题 2：初版 30 trial 参数较重，交互式工具内运行接近或超过 120 秒。
+
+修复：
+- 将 Stage 3.4 诊断参数设为 `numStarts = 3`、`maxSweeps = 4`、`phaseGridSize = 16`、`coarseGridSize = 16`、`fineGridSize = 8`、`finerGridSize = 6`。
+- 该设置用于交互式阶段诊断；后续正式图3/图4可根据运行时间提高 Monte Carlo 数和搜索精度。
+
 ## 2026-05-17 Stage 3.3 自检问题
 
 ### 多 start history 串接造成图像误读
