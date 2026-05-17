@@ -1,5 +1,33 @@
 # Debug Log
 
+## 2026-05-17 第三阶段 ADMM 整改问题记录
+
+### 问题 1：原 `optimize_ris_admm.m` 不是严格 ADMM
+
+- 现象：原实现使用 finite-difference phase-gradient surrogate，并令 `x = candidateU`，随后 `u = project(x - mu/rho)`。
+- 根因：`x` 已经接近单位模，导致 `u` 近似等于 `x`，primal residual 接近 0，`mu` 基本不起作用。
+- 修复：删除该主体逻辑，改为闭式 ADMM：
+  - `u = exp(1j * angle(x - mu/rho))`
+  - `x = (rho*I + T)^(-1) * (rho*u + mu)`
+  - `mu = mu + rho*(u - x)`
+
+### 问题 2：论文 `T` 矩阵无法直接等价到当前 `||Heff||_F^2`
+
+- 现象：当前 `Heff = Hsr^H * diag(v) * Hrd * diag(v)^H * Hsr`，`||Heff||_F^2` 是四次目标。
+- 根因：论文 ADMM 的闭式 `x` 更新依赖二次型 `x^H T x`；当前真实 path gain 不是二次型。
+- 修复：构造维度自洽的二次代理：
+  - `Q = (Hsr*Hsr^H) .* transpose(Hrd)`
+  - `Qh = (Q + Q^H)/2`
+  - `T(1:Nr,1:Nr) = -Qh`
+  - `T(Nr+1,Nr+1) = 0`
+- 标注：该实现为 `quadratic_admm_approximation`，不是严格论文 ADMM。
+
+### 问题 3：surrogate 优于 ADMM 近似
+
+- 现象：最终验证中 surrogate path gain 和 SNR 均高于 quadratic ADMM approximation。
+- 判断：如实保留该结果，不强行调参或放大 ADMM 输出。
+- 后续：若要复现论文图3/图4，需要继续推导更接近论文物理模型的 `T`，或重新定义与 ZF SNR 一致的优化目标。
+
 ## 2026-05-17 Stage 3 Validation Issues
 
 ### Missing path-gain function

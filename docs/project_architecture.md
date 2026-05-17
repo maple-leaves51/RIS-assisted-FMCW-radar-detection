@@ -1,5 +1,35 @@
 # Project Architecture
 
+## 第三阶段整改：ADMM 算法结构修正
+
+本轮将 `functions/optimize_ris_admm.m` 从有限差分相位梯度 surrogate 改为闭式 ADMM 更新结构。当前实现不再使用 finite-difference phase-gradient 作为主体优化逻辑。
+
+当前 `optimize_ris_admm.m` 的方法标识为 `quadratic_admm_approximation`。它使用论文形式的扩展变量：
+
+- `x`: `(Nr+1) x 1`
+- `u`: `(Nr+1) x 1`，满足单位模约束
+- `mu`: `(Nr+1) x 1`
+- `T`: `(Nr+1) x (Nr+1)`
+
+更新公式为：
+
+```text
+u = exp(1j * angle(x - mu/rho))
+x = (rho*I + T)^(-1) * (rho*u + mu)
+mu = mu + rho*(u - x)
+```
+
+需要明确的是，当前工程模型采用 `Hrd = Nr x Nr`，而真实路径增益 `||Heff||_F^2` 对相位 `v` 是四次函数，不能直接写成论文中的二次 `x^H T x`。因此当前 `T` 来自 `trace(Heff)` 的 Hermitian 二次代理：
+
+```text
+Q = (Hsr*Hsr') .* transpose(Hrd)
+Qh = (Q + Q')/2
+T(1:Nr,1:Nr) = -Qh
+T(Nr+1,Nr+1) = 0
+```
+
+新增 `functions/optimize_ris_surrogate.m`，只作为有限差分相位 surrogate 的显式对照，不再作为正式 ADMM。
+
 ## Stage 3 Update: RIS Phase ADMM Validation
 
 This stage added or modified:

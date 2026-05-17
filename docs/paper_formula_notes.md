@@ -1,5 +1,52 @@
 # Paper Formula Notes
 
+## 第三阶段整改后的 ADMM 公式说明
+
+当前工程固定使用：
+
+```text
+Hsr: Nr x Nt
+Hrd: Nr x Nr
+Phi = diag(v): Nr x Nr
+Heff = Hsr^H * Phi * Hrd * Phi^H * Hsr
+gain = ||Heff||_F^2
+```
+
+严格检查后，`gain = ||Heff||_F^2` 在当前 `Hrd = Nr x Nr` 设定下是关于 `v` 和 `conj(v)` 的四次目标，不能直接构造成论文中的二次型 `x^H T x`。因此本轮实现的是“二次型 ADMM 近似”，不是声称已经完全复现论文原始 `T` 矩阵。
+
+本轮采用的二次代理来自：
+
+```text
+trace(Heff) = v^H * Q * v
+Q = (Hsr*Hsr^H) .* transpose(Hrd)
+Qh = (Q + Q^H)/2
+```
+
+为了最大化 `real(v^H Qh v)`，ADMM 写成最小化：
+
+```text
+min 0.5 * x^H * T * x
+T(1:Nr,1:Nr) = -Qh
+T(Nr+1,Nr+1) = 0
+s.t. |u_i| = 1, u = x
+```
+
+闭式更新：
+
+```text
+u^{k+1} = exp(1j * angle(x^k - mu^k/rho))
+x^{k+1} = (rho*I + T)^(-1) * (rho*u^{k+1} + mu^k)
+mu^{k+1} = mu^k + rho*(u^{k+1} - x^{k+1})
+```
+
+相位恢复：
+
+```text
+v = exp(1j * angle(x(1:Nr) / x(Nr+1)))
+```
+
+`optimize_ris_admm.m` 不再使用有限差分梯度。有限差分方法被移动到 `optimize_ris_surrogate.m`，仅用于对照。
+
 ## Stage 3 ADMM Phase Optimization Notes
 
 Current executable dimensions:

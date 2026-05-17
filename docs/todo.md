@@ -1,5 +1,29 @@
 # TODO
 
+## 当前 ADMM 整改状态
+
+### 已完成
+
+- [x] 正视并移除 `optimize_ris_admm.m` 中的 finite-difference phase-gradient 主体逻辑。
+- [x] 按论文形式实现 `x/u/mu/rho` 闭式 ADMM 更新。
+- [x] 构造 `(Nr+1) x (Nr+1)` 的二次型近似 `T` 矩阵。
+- [x] 从 `x(1:Nr)/x(Nr+1)` 恢复 RIS 相位 `v`。
+- [x] 新增 `optimize_ris_surrogate.m` 作为有限差分 surrogate 对照。
+- [x] 在 `main_stage3_admm_validation.m` 中对比 random、ADMM、surrogate。
+- [x] 验证 ADMM 单位模约束、path gain、SNR、primal residual 和 dual residual。
+
+### 暂不进入
+
+- [ ] 暂不实现 CD。
+- [ ] 暂不复现图3。
+- [ ] 暂不复现图4。
+
+### 需要继续修正
+
+- [ ] 当前 ADMM 是 `quadratic_admm_approximation`，还不是严格论文 ADMM。
+- [ ] 需要重新审查论文中 `Hrd`、目标散射矩阵和 `T` 的推导，决定是否调整当前 `Hrd = Nr x Nr` 工程模型。
+- [ ] 需要研究如何让 ADMM 优化目标同时服务于 `||Heff||_F^2` 和 ZF 后 SNR，而不是只优化 `trace(Heff)` 的二次代理。
+
 ## Stage 3 Status
 
 ### Completed

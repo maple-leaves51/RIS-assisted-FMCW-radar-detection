@@ -1,5 +1,25 @@
 # Reproduction Assumptions
 
+## 第三阶段整改后的合理假设
+
+1. 当前未能严格实现论文原始 `T` 矩阵。
+   - 原因不是代码偷懒，而是当前工程采用 `Hrd = Nr x Nr` 后，真实目标 `||Heff||_F^2` 是四次目标。
+   - 论文中的 `T` 矩阵推导更接近二次型路径增益表达，和当前 `||Heff||_F^2` 目标不完全一致。
+
+2. 当前正式 ADMM 是 `quadratic_admm_approximation`。
+   - 它使用论文形式的 `x/u/mu/rho` 和闭式 `x` 更新。
+   - `T` 的维度是 `(Nr+1) x (Nr+1)`。
+   - `T` 来自 `trace(Heff)` 的 Hermitian 二次代理，而不是来自 `||Heff||_F^2` 的精确等价变换。
+
+3. 当前 `optimize_ris_admm.m` 不使用有限差分相位梯度。
+   - `info.usesFiniteDifferenceGradient = false`。
+   - 原有限差分方法保留为 `optimize_ris_surrogate.m`，只用于对照。
+
+4. ADMM 的 residual 有意义但尚未收敛。
+   - 最终验证中 primal residual 为 `3.6459e-09`。
+   - dual residual 为 `9.6119e-05`。
+   - `converged = false`，说明当前二次代理 ADMM 结构可运行，但收敛准则和目标一致性仍需继续修正。
+
 ## Stage 3 Assumptions Added
 
 1. `compute_path_gain.m` uses `gain = ||Heff||_F^2`.

@@ -1,5 +1,43 @@
 # Experiment Log
 
+## 2026-05-17 第三阶段 ADMM 整改验证
+
+- 运行脚本：`main/main_stage3_admm_validation.m`
+- 输出日志：`outputs/logs/stage3_admm_validation_20260517_170010.txt`
+- 输出数据：`outputs/data/stage3_admm_validation_20260517_170010.mat`
+- 收敛图：
+  - `outputs/figures/stage3_admm_convergence.png`
+  - `outputs/figures/stage3_admm_convergence.fig`
+
+算法状态：
+
+- `optimize_ris_admm.m` 方法：`quadratic_admm_approximation`
+- 是否使用有限差分梯度：`false`
+- surrogate 对照函数：`optimize_ris_surrogate.m`
+
+三者对比：
+
+| phase | path gain | SNR dB | 单位模误差 |
+| --- | ---: | ---: | ---: |
+| random | `8.9838e-08` | `-82.614` | 约 `1e-16` |
+| quadratic ADMM approximation | `9.0555e-08` | `-82.5793` | `1.1102e-16` |
+| finite-difference surrogate | `1.1582e-07` | `-82.3683` | `1.1102e-16` |
+
+ADMM residual：
+
+- final primal residual: `3.6459e-09`
+- final dual residual: `9.6119e-05`
+- iterations: `500`
+- converged: `false`
+- rho: `1`
+
+结论：
+
+- ADMM 后 path gain 不低于 random。
+- ADMM 后 SNR 不低于 random。
+- surrogate 结果优于当前二次型 ADMM 近似，但 surrogate 不是论文 ADMM，不能冒充正式 ADMM。
+- 当前不建议直接进入 CD 或图3/图4，应继续修正 ADMM 目标与当前物理模型的一致性。
+
 ## 2026-05-17 Stage 3 ADMM Validation
 
 - Script: `main/main_stage3_admm_validation.m`

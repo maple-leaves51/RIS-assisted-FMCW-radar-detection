@@ -1,31 +1,49 @@
 function [vAdmm, info] = optimize_ris_admm(Hsr, Hrd, params, options)
-%OPTIMIZE_RIS_ADMM Optimize RIS phases with a projected ADMM framework.
+%OPTIMIZE_RIS_ADMM RIS phase optimization with closed-form ADMM updates.
 %
 %   Inputs:
 %       Hsr     - Source/Radar-to-RIS channel, size Nr x Nt.
 %       Hrd     - Stage-2 RIS-domain target/return effective channel, size
-%                 Nr x Nr.
+%                 Nr x Nr. The project convention is fixed as:
+%                 Heff = Hsr' * diag(v) * Hrd * diag(v)' * Hsr.
 %       params  - Struct from config/paper_params.m.
-%       options - Optional struct with fields:
-%                 initialV, maxIter, tolerance, rho, gradientStep,
-%                 minGradientStep, backtrackingFactor, finiteDifferenceStep.
+%       options - Optional struct:
+%                 initialV  : Nr x 1 unit-modulus initial RIS phase.
+%                 maxIter   : maximum ADMM iterations.
+%                 tolerance : convergence tolerance.
+%                 rho       : ADMM penalty. It is increased if needed so
+%                             rho*I + T is numerically positive definite.
 %
 %   Outputs:
-%       vAdmm - Optimized RIS phase vector, size Nr x 1, projected to
-%               satisfy |v_i| = 1.
-%       info  - Struct with objectiveHistory, primalResidualHistory,
-%               dualResidualHistory, numIter, converged, rho, and method.
+%       vAdmm - RIS phase vector, size Nr x 1, with |v_i| = 1.
+%       info  - Struct containing objectiveHistory, quadraticObjectiveHistory,
+%               primalResidualHistory, dualResidualHistory, numIter,
+%               converged, rho, method, T, and model notes.
 %
-%   Current objective:
-%       maximize gain(v) = ||Hsr' * diag(v) * Hrd * diag(v)' * Hsr||_F^2.
+%   ADMM form:
+%       The paper uses an extended vector x in C^(Nr+1), unit-modulus u,
+%       and multiplier mu:
 %
-%   Relation to the paper:
-%       The paper's printed ADMM x/u/mu update is derived from a quadratic
-%       T-matrix form. Under the current Stage-2 Hrd: Nr x Nr convention,
-%       the executable Frobenius path gain is quartic in v. Therefore this
-%       implementation keeps the ADMM-style consensus/projection variables
-%       x, u, and mu, but uses a finite-difference phase-gradient surrogate
-%       for the x-step instead of forcing an inconsistent T matrix.
+%           u = exp(1j * angle(x - mu/rho))
+%           x = (rho*I + T)^(-1) * (rho*u + mu)
+%           mu = mu + rho*(u - x)
+%
+%       Under the current Hrd: Nr x Nr project convention, the executable
+%       path gain ||Heff||_F^2 is quartic in v and cannot be represented by
+%       the paper's quadratic T matrix without changing the model. This
+%       function therefore constructs a dimension-consistent quadratic ADMM
+%       approximation from the Hermitian part of trace(Heff):
+%
+%           trace(Heff) = v' * Q * v, Q = (Hsr*Hsr') .* transpose(Hrd)
+%
+%       The ADMM minimizes 0.5*x'*T*x with:
+%
+%           T(1:Nr,1:Nr) = -0.5*(Q + Q')
+%           T(Nr+1,Nr+1) = 0
+%
+%       The final RIS phase is recovered as v = exp(1j*angle(x(1:Nr)/x(end))).
+%       This is explicitly a quadratic ADMM approximation, not an exact
+%       reproduction of the paper's T matrix.
 
 arguments
     Hsr {mustBeNumeric}
@@ -42,114 +60,120 @@ end
 
 maxIter = get_option(options, "maxIter", params.optim.maxIter);
 tolerance = get_option(options, "tolerance", min(params.optim.tolerances));
-rho = get_option(options, "rho", 1);
-gradientStep = get_option(options, "gradientStep", 0.2);
-minGradientStep = get_option(options, "minGradientStep", 1e-6);
-backtrackingFactor = get_option(options, "backtrackingFactor", 0.5);
-finiteDifferenceStep = get_option(options, "finiteDifferenceStep", 1e-4);
+rhoRequested = get_option(options, "rho", 1);
 
 if isfield(options, "initialV")
-    u = project_unit_modulus(options.initialV(:));
+    v0 = project_unit_modulus(options.initialV(:));
 else
-    u = exp(1j .* 2 .* pi .* rand(Nr, 1));
+    v0 = exp(1j .* 2 .* pi .* rand(Nr, 1));
 end
-x = u;
-mu = zeros(Nr, 1);
+
+[T, qMatrix, tMeta] = build_quadratic_t_matrix(Hsr, Hrd);
+minEigT = min(real(eig(T)));
+rhoMinimum = max(0, -minEigT) + 1e-9;
+rho = max(rhoRequested, 1.05 * rhoMinimum);
+
+x = [v0; 1];
+mu = zeros(Nr + 1, 1);
+systemMatrix = rho .* eye(Nr + 1) + T;
 
 objectiveHistory = zeros(maxIter + 1, 1);
+quadraticObjectiveHistory = zeros(maxIter + 1, 1);
 primalResidualHistory = zeros(maxIter, 1);
 dualResidualHistory = zeros(maxIter, 1);
-stepHistory = zeros(maxIter, 1);
 
-currentGain = compute_path_gain(Hsr, Hrd, u);
-bestGain = currentGain;
-bestV = u;
-objectiveHistory(1) = currentGain;
+vCurrent = recover_phase_from_extended_x(x, Nr);
+objectiveHistory(1) = compute_path_gain(Hsr, Hrd, vCurrent);
+quadraticObjectiveHistory(1) = real(0.5 .* (x' * T * x));
+
+bestV = vCurrent;
+bestObjective = objectiveHistory(1);
 converged = false;
 
 for iter = 1:maxIter
-    uPrev = u;
-    xPrev = x;
+    xPrevious = x;
 
-    phaseGradient = finite_difference_phase_gradient(Hsr, Hrd, u, finiteDifferenceStep);
-    gradientScale = max(norm(phaseGradient, inf), eps);
-    phaseDirection = phaseGradient ./ gradientScale;
-
-    step = gradientStep;
-    theta = angle(u);
-    accepted = false;
-    candidateU = u;
-
-    while step >= minGradientStep
-        candidateU = exp(1j .* (theta + step .* phaseDirection));
-        candidateGain = compute_path_gain(Hsr, Hrd, candidateU);
-        if candidateGain >= currentGain
-            accepted = true;
-            break;
-        end
-        step = step .* backtrackingFactor;
-    end
-
-    if ~accepted
-        candidateU = u;
-        step = 0;
-    end
-
-    % Surrogate x-step for the current quartic objective.
-    x = candidateU;
-
-    % Paper-style unit-modulus projection step for u.
     u = project_unit_modulus(x - (mu ./ rho));
-
-    % Paper-style dual update for the consensus constraint u = x.
+    x = systemMatrix \ (rho .* u + mu);
     mu = mu + rho .* (u - x);
 
-    currentGain = compute_path_gain(Hsr, Hrd, u);
-    if currentGain > bestGain
-        bestGain = currentGain;
-        bestV = u;
-    end
+    vCurrent = recover_phase_from_extended_x(x, Nr);
+    trueObjective = compute_path_gain(Hsr, Hrd, vCurrent);
+    quadraticObjective = real(0.5 .* (x' * T * x));
 
-    objectiveHistory(iter + 1) = currentGain;
+    objectiveHistory(iter + 1) = trueObjective;
+    quadraticObjectiveHistory(iter + 1) = quadraticObjective;
     primalResidualHistory(iter) = norm(u - x);
-    dualResidualHistory(iter) = rho .* norm(x - xPrev);
-    stepHistory(iter) = step;
+    dualResidualHistory(iter) = rho .* norm(x - xPrevious);
 
-    relativeObjectiveChange = double(abs(objectiveHistory(iter + 1) - objectiveHistory(iter)) ...
-        ./ max(abs(objectiveHistory(iter)), eps));
-    consensusResidual = double(primalResidualHistory(iter) + dualResidualHistory(iter));
-
-    if iter > 2 && all(relativeObjectiveChange < tolerance) && all(consensusResidual < sqrt(Nr) * tolerance)
-        converged = true;
-        break;
+    if trueObjective >= bestObjective
+        bestObjective = trueObjective;
+        bestV = vCurrent;
     end
 
-    if norm(u - uPrev) < tolerance && all(relativeObjectiveChange < tolerance)
+    primalOk = primalResidualHistory(iter) < sqrt(Nr + 1) .* tolerance;
+    dualOk = dualResidualHistory(iter) < sqrt(Nr + 1) .* tolerance;
+    if iter > 1 && primalOk && dualOk
         converged = true;
         break;
     end
 end
 
 numIter = iter;
-vAdmm = project_unit_modulus(bestV);
+vFinal = recover_phase_from_extended_x(x, Nr);
+
+% Return the best true path-gain iterate generated by the closed-form ADMM.
+% This safeguard uses only ADMM iterates; it does not use gradient search.
+if bestObjective >= compute_path_gain(Hsr, Hrd, v0)
+    vAdmm = bestV;
+else
+    vAdmm = vFinal;
+end
+vAdmm = project_unit_modulus(vAdmm);
 
 info = struct();
-info.method = "stage3_projected_phase_admm_surrogate";
-info.objective = "maximize ||Hsr'' * diag(v) * Hrd * diag(v)'' * Hsr||_F^2";
+info.method = "quadratic_admm_approximation";
+info.paperLikeUpdates = true;
+info.usesFiniteDifferenceGradient = false;
+info.objective = "true objective logged as ||Heff||_F^2; ADMM optimizes quadratic trace(Heff) proxy";
 info.objectiveHistory = objectiveHistory(1:numIter + 1);
+info.quadraticObjectiveHistory = quadraticObjectiveHistory(1:numIter + 1);
 info.primalResidualHistory = primalResidualHistory(1:numIter);
 info.dualResidualHistory = dualResidualHistory(1:numIter);
-info.stepHistory = stepHistory(1:numIter);
 info.numIter = numIter;
 info.converged = converged;
 info.rho = rho;
+info.rhoRequested = rhoRequested;
+info.rhoMinimum = rhoMinimum;
 info.tolerance = tolerance;
-info.finiteDifferenceStep = finiteDifferenceStep;
 info.initialObjective = objectiveHistory(1);
 info.finalObjective = compute_path_gain(Hsr, Hrd, vAdmm);
-info.bestObjective = bestGain;
+info.bestObjective = bestObjective;
 info.unitModulusMaxError = max(abs(abs(vAdmm) - 1));
+info.T = T;
+info.Q = qMatrix;
+info.TMeta = tMeta;
+info.dimension.x = [Nr + 1, 1];
+info.dimension.u = [Nr + 1, 1];
+info.dimension.mu = [Nr + 1, 1];
+info.dimension.T = size(T);
+end
 
+function [T, Qh, meta] = build_quadratic_t_matrix(Hsr, Hrd)
+Nr = size(Hsr, 1);
+Rsr = Hsr * Hsr';
+Q = Rsr .* transpose(Hrd);
+Qh = 0.5 .* (Q + Q');
+
+T = zeros(Nr + 1, Nr + 1);
+T(1:Nr, 1:Nr) = -Qh;
+T = 0.5 .* (T + T');
+
+meta = struct();
+meta.proxy = "real(trace(Heff)) = real(v^H * Qh * v)";
+meta.QSize = size(Qh);
+meta.TSize = size(T);
+meta.note = "Quadratic proxy is dimension-consistent but not equal to ||Heff||_F^2.";
 end
 
 function value = get_option(options, fieldName, defaultValue)
@@ -160,28 +184,16 @@ else
 end
 end
 
+function v = recover_phase_from_extended_x(x, Nr)
+denominator = x(Nr + 1);
+if abs(denominator) < eps
+    denominator = 1;
+end
+v = project_unit_modulus(x(1:Nr) ./ denominator);
+end
+
 function v = project_unit_modulus(z)
 v = exp(1j .* angle(z));
 zeroMask = abs(z) < eps;
 v(zeroMask) = 1;
-end
-
-function grad = finite_difference_phase_gradient(Hsr, Hrd, v, delta)
-Nr = numel(v);
-theta = angle(v);
-grad = zeros(Nr, 1);
-
-for idx = 1:Nr
-    thetaPlus = theta;
-    thetaMinus = theta;
-    thetaPlus(idx) = thetaPlus(idx) + delta;
-    thetaMinus(idx) = thetaMinus(idx) - delta;
-
-    vPlus = exp(1j .* thetaPlus);
-    vMinus = exp(1j .* thetaMinus);
-
-    gainPlus = compute_path_gain(Hsr, Hrd, vPlus);
-    gainMinus = compute_path_gain(Hsr, Hrd, vMinus);
-    grad(idx) = (gainPlus - gainMinus) ./ (2 .* delta);
-end
 end
