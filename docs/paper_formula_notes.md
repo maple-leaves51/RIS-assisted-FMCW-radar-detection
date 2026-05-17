@@ -1,5 +1,27 @@
 # Paper Formula Notes
 
+## Stage 3.3：ZF-SNR 作为主目标
+
+当前主线目标不再是单纯路径增益：
+
+```text
+path_gain = ||Heff||_F^2
+```
+
+而是 ZF 归一化后的 SNR：
+
+```text
+B_zf = sqrt(P / ||pinv(Heff)||_F^2) * pinv(Heff)
+zf_snr = ||Heff * B_zf||_F^2 / noisePower
+```
+
+因此 `cond(Heff)` 和 `||pinv(Heff)||_F^2` 会直接影响最终 SNR。当前实验已经说明：
+
+- 增大 `path_gain` 可能恶化 `cond(Heff)`，从而降低 ZF-SNR。
+- 直接优化 `zf_snr` 可以降低 `cond(Heff)` 和 ZF raw power，从而提高 ZF-SNR。
+
+后续图3/图4若以 SNR 为纵轴，主算法应优先使用 `objectiveType = "zf_snr"`，而不是 `path_gain` 或 quadratic ADMM proxy。
+
 ## 第三阶段目标函数统一
 
 当前统一目标函数由 `evaluate_ris_objective.m` 提供：

@@ -1,5 +1,32 @@
 # Experiment Log
 
+## 2026-05-17 Stage 3.3 ZF-SNR 稳定性测试
+
+- 运行脚本：`main/main_stage3_zf_snr_stability.m`
+- 输出日志：`outputs/logs/stage3_zf_snr_stability_20260517_180009.txt`
+- 输出数据：`outputs/data/stage3_zf_snr_stability_20260517_180009.mat`
+- 输出图：
+  - `outputs/figures/stage3_zf_snr_stability.png`
+  - `outputs/figures/stage3_zf_snr_stability.fig`
+
+统计结果：
+
+- trials: `8`
+- failure count (`improvement <= 0 dB`): `0`
+- mean improvement: `13.8389 dB`
+- median improvement: `13.7255 dB`
+- min improvement: `6.8751 dB`
+- max improvement: `19.303 dB`
+- best-so-far endpoint matches final best: `true`
+
+结论：
+
+- `objective_zf_snr` 在 8 个随机信道上均显著优于 random phase。
+- 优化后 `cond(Heff)` 和 ZF raw power 整体明显下降。
+- 部分 trial 中 path gain 不一定增加，但 SNR 增加，这进一步说明 path gain 不是当前主目标。
+
+注意：日志表格中的 seed 使用 MATLAB 默认显示格式，显示为科学计数法，看起来相近；实际 seed 已保存在 `.mat` 文件的 `trialTable` 中。
+
 ## 2026-05-17 第三阶段目标统一诊断
 
 - 运行脚本：`main/main_stage3_admm_validation.m`

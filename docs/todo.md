@@ -1,5 +1,29 @@
 # TODO
 
+## Stage 3.3 完成状态
+
+### 已完成
+
+- [x] 修正多 start 历史记录。
+- [x] 增加 best-so-far 曲线字段。
+- [x] 让 best-so-far 曲线终点与最终 best result 一致。
+- [x] 新增多随机种子稳定性测试脚本 `main_stage3_zf_snr_stability.m`。
+- [x] 验证 `objective_zf_snr` 在 8 个随机信道下平均 SNR 提升为正。
+- [x] 明确 failure count。
+- [x] 输出 random 和 optimized 的 SNR、path gain、`cond(Heff)`、ZF raw power。
+
+### 当前不做
+
+- [ ] 不进入图3复现。
+- [ ] 不进入图4复现。
+- [ ] 不继续把 quadratic ADMM proxy 作为主结果算法。
+
+### 下一步建议
+
+- [ ] 将 seed 字段在日志中改为字符串，避免 MATLAB 表格科学计数法显示造成误读。
+- [ ] 对比 `zf_snr` 与 `zf_snr_with_condition_penalty` 的多随机种子稳定性。
+- [ ] 评估 coarse-to-fine phase search 或 Adam phase optimizer 是否能进一步提高 SNR 并降低运行时间。
+
 ## 第三阶段目标统一整改状态
 
 ### 已完成

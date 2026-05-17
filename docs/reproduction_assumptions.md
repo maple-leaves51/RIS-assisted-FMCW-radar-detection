@@ -1,5 +1,19 @@
 # Reproduction Assumptions
 
+## Stage 3.3：后续算法主线假设
+
+1. 后续 RIS 相位优化主线采用 `objectiveType = "zf_snr"`。
+   - 这是当前工程模型下的工程目标。
+   - `path_gain` 只作为辅助观察指标，不再作为 SNR 图表主结论。
+
+2. 多 start 优化结果必须使用 best-so-far 曲线解释。
+   - 不同 start 的普通 history 不能直接串接后当作单条连续优化轨迹。
+   - 当前已记录 `bestSnrDbHistory` 等字段，终点与最终 best 结果一致。
+
+3. 稳定性判断必须跨多个随机信道。
+   - 单次随机结果不再作为算法有效性的充分证据。
+   - 当前 Stage 3.3 使用 8 个随机信道种子测试 `zf_snr` 目标驱动优化器。
+
 ## 第三阶段目标统一后的结论
 
 1. `quadratic_admm_approximation` 不是后续 SNR 曲线的首选算法。

@@ -1,5 +1,19 @@
 # Project Architecture
 
+## Stage 3.3：ZF-SNR 主线优化与稳定性诊断
+
+本轮在不复现图3/图4的前提下，强化 RIS 相位优化诊断链路：
+
+- `functions/optimize_ris_objective_driven.m`：修正多 start 历史记录。现在每个 start 的初始点和每轮 sweep 都会记录，同时维护 `bestObjectiveHistory`、`bestPathGainHistory`、`bestSnrDbHistory`、`bestCondHistory`、`bestZfRawPowerHistory`。图像应使用 best-so-far 曲线，保证曲线终点与最终 best 结果一致。
+- `main/main_stage3_admm_validation.m`：诊断图改为使用 best-so-far 历史，不再把不同 start 的普通 history 串接后误读为单条连续优化曲线。
+- `main/main_stage3_zf_snr_stability.m`：新增多随机种子稳定性测试。该脚本只验证 `objectiveType = "zf_snr"` 是否在多个随机信道下稳定优于 random phase。
+
+当前主线约定：
+
+- 主优化目标：`zf_snr`
+- 辅助观察指标：`path_gain`、`cond(Heff)`、`ZF raw power`
+- quadratic ADMM：仅作为代理目标学习和诊断模块，不作为后续 SNR 曲线主算法
+
 ## 第三阶段目标统一整改
 
 本轮新增并调整以下文件：

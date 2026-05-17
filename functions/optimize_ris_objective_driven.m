@@ -15,9 +15,11 @@ function [vBest, info] = optimize_ris_objective_driven(Hsr, Hrd, params, objecti
 %
 %   Outputs:
 %       vBest - Best unit-modulus RIS phase vector, size Nr x 1.
-%       info  - Struct with objectiveHistory, pathGainHistory, snrDbHistory,
-%               condHistory, stepHistory, numIter, converged, method, and
-%               objectiveType.
+%       info  - Struct with per-record history and best-so-far history:
+%               objectiveHistory, bestObjectiveHistory, pathGainHistory,
+%               bestPathGainHistory, snrDbHistory, bestSnrDbHistory,
+%               condHistory, bestCondHistory, stepHistory, startHistory,
+%               sweepHistory, numIter, converged, method, and objectiveType.
 %
 %   Method:
 %       Multi-start coordinate phase search. For each coordinate, the method
@@ -62,12 +64,20 @@ for startIdx = firstRandomStart:numStarts
     initialCandidates{startIdx} = exp(1j .* 2 .* pi .* rand(Nr, 1));
 end
 
-maxRecords = numStarts * maxSweeps + 1;
+maxRecords = numStarts * (maxSweeps + 1);
 objectiveHistory = zeros(maxRecords, 1);
+bestObjectiveHistory = zeros(maxRecords, 1);
 pathGainHistory = zeros(maxRecords, 1);
+bestPathGainHistory = zeros(maxRecords, 1);
 snrDbHistory = zeros(maxRecords, 1);
+bestSnrDbHistory = zeros(maxRecords, 1);
 condHistory = zeros(maxRecords, 1);
+bestCondHistory = zeros(maxRecords, 1);
+zfRawPowerHistory = zeros(maxRecords, 1);
+bestZfRawPowerHistory = zeros(maxRecords, 1);
 stepHistory = zeros(maxRecords, 1);
+startHistory = zeros(maxRecords, 1);
+sweepHistory = zeros(maxRecords, 1);
 recordIdx = 0;
 
 bestObjective = -Inf;
@@ -79,9 +89,11 @@ phaseGrid(end) = [];
 
 for startIdx = 1:numStarts
     v = initialCandidates{startIdx};
-    currentObjective = evaluate_ris_objective( ...
+    [currentObjective, currentMetrics] = evaluate_ris_objective( ...
         Hsr, Hrd, v, params, objectiveType, objectiveOptions);
     previousSweepObjective = currentObjective;
+    [recordIdx, bestObjective, bestV, bestMetrics] = append_record( ...
+        recordIdx, startIdx, 0, 0, currentObjective, currentMetrics, v);
 
     for sweepIdx = 1:maxSweeps
         acceptedUpdates = 0;
@@ -111,18 +123,8 @@ for startIdx = 1:numStarts
         [currentObjective, currentMetrics] = evaluate_ris_objective( ...
             Hsr, Hrd, v, params, objectiveType, objectiveOptions);
 
-        recordIdx = recordIdx + 1;
-        objectiveHistory(recordIdx) = currentObjective;
-        pathGainHistory(recordIdx) = currentMetrics.pathGain;
-        snrDbHistory(recordIdx) = currentMetrics.snrDb;
-        condHistory(recordIdx) = currentMetrics.condHeff;
-        stepHistory(recordIdx) = acceptedUpdates;
-
-        if currentObjective > bestObjective
-            bestObjective = currentObjective;
-            bestV = v;
-            bestMetrics = currentMetrics;
-        end
+        [recordIdx, bestObjective, bestV, bestMetrics] = append_record( ...
+            recordIdx, startIdx, sweepIdx, acceptedUpdates, currentObjective, currentMetrics, v);
 
         relativeImprovement = double(abs(currentObjective - previousSweepObjective) ...
             ./ max(abs(previousSweepObjective), eps));
@@ -142,10 +144,18 @@ info = struct();
 info.method = "multi_start_coordinate_phase_search";
 info.objectiveType = objectiveType;
 info.objectiveHistory = objectiveHistory(1:recordIdx);
+info.bestObjectiveHistory = bestObjectiveHistory(1:recordIdx);
 info.pathGainHistory = pathGainHistory(1:recordIdx);
+info.bestPathGainHistory = bestPathGainHistory(1:recordIdx);
 info.snrDbHistory = snrDbHistory(1:recordIdx);
+info.bestSnrDbHistory = bestSnrDbHistory(1:recordIdx);
 info.condHistory = condHistory(1:recordIdx);
+info.bestCondHistory = bestCondHistory(1:recordIdx);
+info.zfRawPowerHistory = zfRawPowerHistory(1:recordIdx);
+info.bestZfRawPowerHistory = bestZfRawPowerHistory(1:recordIdx);
 info.stepHistory = stepHistory(1:recordIdx);
+info.startHistory = startHistory(1:recordIdx);
+info.sweepHistory = sweepHistory(1:recordIdx);
 info.numIter = recordIdx;
 info.converged = convergedAny;
 info.numStarts = numStarts;
@@ -157,6 +167,35 @@ info.finalObjective = finalObjective;
 info.finalMetrics = finalMetrics;
 info.bestMetrics = bestMetrics;
 info.unitModulusMaxError = max(abs(abs(vBest) - 1));
+
+    function [newRecordIdx, newBestObjective, newBestV, newBestMetrics] = append_record( ...
+            oldRecordIdx, startId, sweepId, acceptedUpdates, currentObjectiveValue, currentMetricsValue, currentV)
+        newRecordIdx = oldRecordIdx + 1;
+        objectiveHistory(newRecordIdx) = currentObjectiveValue;
+        pathGainHistory(newRecordIdx) = currentMetricsValue.pathGain;
+        snrDbHistory(newRecordIdx) = currentMetricsValue.snrDb;
+        condHistory(newRecordIdx) = currentMetricsValue.condHeff;
+        zfRawPowerHistory(newRecordIdx) = currentMetricsValue.zfRawPower;
+        stepHistory(newRecordIdx) = acceptedUpdates;
+        startHistory(newRecordIdx) = startId;
+        sweepHistory(newRecordIdx) = sweepId;
+
+        if currentObjectiveValue > bestObjective
+            newBestObjective = currentObjectiveValue;
+            newBestV = currentV;
+            newBestMetrics = currentMetricsValue;
+        else
+            newBestObjective = bestObjective;
+            newBestV = bestV;
+            newBestMetrics = bestMetrics;
+        end
+
+        bestObjectiveHistory(newRecordIdx) = newBestObjective;
+        bestPathGainHistory(newRecordIdx) = newBestMetrics.pathGain;
+        bestSnrDbHistory(newRecordIdx) = newBestMetrics.snrDb;
+        bestCondHistory(newRecordIdx) = newBestMetrics.condHeff;
+        bestZfRawPowerHistory(newRecordIdx) = newBestMetrics.zfRawPower;
+    end
 end
 
 function value = get_option(options, fieldName, defaultValue)

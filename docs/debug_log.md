@@ -1,5 +1,20 @@
 # Debug Log
 
+## 2026-05-17 Stage 3.3 自检问题
+
+### 多 start history 串接造成图像误读
+
+- 现象：旧图中 `objective_path_gain` 和 `objective_zf_snr` 曲线出现跳变，且曲线终点不一定等于最终 best。
+- 根因：多个 start 的普通 history 被直接串接，不应被解释为单条连续优化曲线。
+- 修复：`optimize_ris_objective_driven.m` 增加 best-so-far 历史字段；诊断图改画 best-so-far 曲线。
+- 验证：`main_stage3_zf_snr_stability.m` 中 `Best-so-far endpoints match final best: true`。
+
+### path gain 与 ZF-SNR 不一致
+
+- 现象：有些 trial 优化后 path gain 不一定高于 random，但 SNR 明显更高。
+- 根因：ZF-SNR 主要受 `pinv(Heff)` 和条件数影响，而不仅是 `||Heff||_F^2`。
+- 处理：后续主线以 `zf_snr` 为目标，path gain 仅作为辅助诊断指标。
+
 ## 2026-05-17 目标统一整改中的问题
 
 ### ADMM 数值发散
