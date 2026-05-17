@@ -1,5 +1,24 @@
 # Reproduction Assumptions
 
+## Stage 3 Assumptions Added
+
+1. `compute_path_gain.m` uses `gain = ||Heff||_F^2`.
+   - This is the executable objective under `Hsr: Nr x Nt` and `Hrd: Nr x Nr`.
+   - It is not presented as the exact paper `T`-matrix quadratic objective.
+
+2. `optimize_ris_admm.m` is a projected/proximal ADMM surrogate.
+   - It keeps the `x/u/mu/rho` consensus-projection structure.
+   - The `x` step uses finite-difference phase-gradient backtracking.
+   - The closed-form paper update `(rho I + T)^(-1)(rho u + mu)` is not forced, because the current objective is quartic under the Stage-2 `Hrd` convention.
+
+3. Stage 3 validation checks both path gain and ZF-normalized SNR.
+   - Actual debugging showed that aggressive path-gain ascent can reduce ZF SNR by making `Heff` more ill-conditioned.
+   - The validation script therefore uses `gradientStep = 0.005` and `maxIter = 50`.
+
+4. `info.converged = false` is acceptable for Stage 3.
+   - The stage acceptance criteria are successful script execution, unit-modulus phases, saved convergence curve, path gain not lower than random, and SNR not lower than random.
+   - Formal convergence tuning is deferred until the figure-reproduction stage.
+
 本文档只记录论文未明确给出、但代码复现必须补充的内容。凡是这里的内容都属于“合理复现假设”，不能写成论文原文。
 
 ## 当前已识别的合理复现假设

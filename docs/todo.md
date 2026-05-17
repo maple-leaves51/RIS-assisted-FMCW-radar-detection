@@ -1,5 +1,32 @@
 # TODO
 
+## Stage 3 Status
+
+### Completed
+
+- [x] Confirmed and reused current dimensions: `Hsr: Nr x Nt`, `Hrd: Nr x Nr`, `Phi: Nr x Nr`, `Heff: Nt x Nt`, `B: Nt x Nt`, `v: Nr x 1`.
+- [x] Added `functions/compute_path_gain.m`.
+- [x] Implemented `functions/optimize_ris_admm.m` as a projected/proximal ADMM surrogate.
+- [x] Added and ran `main/main_stage3_admm_validation.m`.
+- [x] Verified unit-modulus constraint for `v_admm`.
+- [x] Verified ADMM path gain is not lower than random phase.
+- [x] Verified ADMM ZF-normalized SNR is not lower than random phase.
+- [x] Saved ADMM convergence curve as `.png` and `.fig`.
+- [x] Saved Stage 3 validation log and data.
+- [x] Updated project documents.
+
+### Not Done
+
+- [ ] `optimize_ris_cd.m` is still not implemented.
+- [ ] Fig. 3, Fig. 4, Fig. 5, and Fig. 6 are still not reproduced.
+- [ ] The implementation does not yet claim exact reproduction of the paper's closed-form `T`-matrix ADMM.
+
+### Next Suggestions
+
+- [ ] Add MATLAB unittest or small fixed-matrix tests for `compute_path_gain.m` and `optimize_ris_admm.m`.
+- [ ] Derive whether the current `Hrd: Nr x Nr` model can produce a valid quadratic ADMM target, or whether the model should be changed before Fig. 3 reproduction.
+- [ ] Before Fig. 3, define `N_r` sweep values, Monte Carlo count, and whether to optimize path gain, ZF SNR, or a safeguarded objective.
+
 ## 已完成
 
 - [x] 阅读论文 PDF 并提取第一轮复现所需的核心信息。

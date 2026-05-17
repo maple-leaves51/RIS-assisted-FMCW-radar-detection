@@ -1,5 +1,57 @@
 # Experiment Log
 
+## 2026-05-17 Stage 3 ADMM Validation
+
+- Script: `main/main_stage3_admm_validation.m`
+- Random seed: `20251012`
+- Dimensions:
+  - `Hsr = [16 4]`
+  - `Hrd = [16 16]`
+  - `vRandom = [16 1]`
+  - `vAdmm = [16 1]`
+- Unit-modulus max error: `1.1102e-16`
+- Path gain:
+  - random: `8.9838e-08`
+  - ADMM: `1.1582e-07`
+  - improvement: `1.1034 dB`
+- ZF-normalized SNR:
+  - random: `-82.614 dB`
+  - ADMM: `-82.3683 dB`
+  - improvement: `0.24576 dB`
+- ADMM settings:
+  - method: `stage3_projected_phase_admm_surrogate`
+  - iterations: `50`
+  - converged: `false`
+  - rho: `1`
+  - gradientStep: `0.005`
+- Output log: `outputs/logs/stage3_admm_validation_20260517_161538.txt`
+- Output data: `outputs/data/stage3_admm_validation_20260517_161538.mat`
+- Output figures:
+  - `outputs/figures/stage3_admm_convergence.png`
+  - `outputs/figures/stage3_admm_convergence.fig`
+- Acceptance result: script ran successfully; unit-modulus constraint passed; ADMM path gain and ZF SNR were both not lower than the random phase baseline; convergence figures were saved.
+
+## 2026-05-17 Stage 3 Final Verification Run
+
+- Script: `main/main_stage3_admm_validation.m`
+- Purpose: final verification after Code Analyzer cleanup.
+- Random seed: `20251012`
+- Unit-modulus max error: `1.1102e-16`
+- Random path gain: `8.9838e-08`
+- ADMM path gain: `1.1582e-07`
+- Gain improvement: `1.1034 dB`
+- Random SNR: `-82.614 dB`
+- ADMM SNR: `-82.3683 dB`
+- SNR improvement: `0.24576 dB`
+- ADMM iterations: `50`
+- ADMM converged: `false`
+- Output log: `outputs/logs/stage3_admm_validation_20260517_161902.txt`
+- Output data: `outputs/data/stage3_admm_validation_20260517_161902.mat`
+- Output figures:
+  - `outputs/figures/stage3_admm_convergence.png`
+  - `outputs/figures/stage3_admm_convergence.fig`
+- Acceptance result: passed.
+
 本文件记录每次实验运行结果。每次运行 `main/` 下脚本后必须追加记录。
 
 ## 记录模板

@@ -1,5 +1,23 @@
 # Debug Log
 
+## 2026-05-17 Stage 3 Validation Issues
+
+### Missing path-gain function
+
+- Script: `main/main_stage3_admm_validation.m`
+- Symptom: first validation run failed because `compute_path_gain` was undefined.
+- Root cause: validation was written before the production function, as intended.
+- Fix: added `functions/compute_path_gain.m`.
+
+### Path gain improvement can reduce ZF SNR
+
+- Functions: `optimize_ris_admm.m`, `design_precoder_zf.m`, `compute_snr.m`
+- Symptom: with `gradientStep = 0.25`, path gain increased from `8.9838e-08` to `5.2076e-07`, but ZF-normalized SNR dropped from `-82.614 dB` to `-83.5887 dB`.
+- Evidence: `pinv(Heff)` raw power increased from `7.3023e+08 W` to `9.1396e+08 W`, and condition number increased from about `5.24` to about `19.41`.
+- Root cause: maximizing `||Heff||_F^2` alone does not guarantee better ZF-normalized SNR; aggressive phase steps can make `Heff` more ill-conditioned.
+- Fix: use conservative validation settings, `gradientStep = 0.005` and `maxIter = 50`.
+- Verification: rerun improved path gain by `1.1034 dB` and ZF-normalized SNR by `0.24576 dB`.
+
 本文件记录每次 bug、错误信息、定位过程、修复方案和遗留问题。
 
 ## 记录模板

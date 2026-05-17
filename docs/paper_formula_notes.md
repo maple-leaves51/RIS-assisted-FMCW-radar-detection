@@ -1,5 +1,58 @@
 # Paper Formula Notes
 
+## Stage 3 ADMM Phase Optimization Notes
+
+Current executable dimensions:
+
+```text
+Hsr: Nr x Nt
+Hrd: Nr x Nr
+v:   Nr x 1, |v_i| = 1
+Phi = diag(v): Nr x Nr
+Heff = Hsr^H * Phi * Hrd * Phi^H * Hsr: Nt x Nt
+B: Nt x Nt
+```
+
+Stage 3 path-gain objective:
+
+```text
+gain(v) = ||Heff(v)||_F^2
+Heff(v) = Hsr^H * diag(v) * Hrd * diag(v)^H * Hsr
+```
+
+This is the executable path-gain objective for the current code convention. It is not claimed to be identical to the paper's printed quadratic `T`-matrix objective, because the current `Hrd: Nr x Nr` convention makes `||Heff||_F^2` quartic in `v`.
+
+Implemented ADMM surrogate:
+
+```text
+x  : surrogate phase-update variable
+u  : unit-modulus projection variable
+mu : consensus multiplier
+rho: consensus penalty
+```
+
+Iteration outline:
+
+```text
+1. initialize u = v0, x = u, mu = 0
+2. estimate finite-difference gradient of gain(exp(j theta)) with respect to theta
+3. take a conservative backtracking phase step for the x update
+4. project u = exp(j angle(x - mu/rho))
+5. update mu = mu + rho * (u - x)
+6. record objective, primal residual, and dual residual
+```
+
+Stage 3 validation used:
+
+```text
+maxIter = 50
+rho = 1
+gradientStep = 0.005
+finiteDifferenceStep = 1e-4
+```
+
+Important: larger steps increased path gain but worsened `pinv(Heff)` conditioning and reduced ZF-normalized SNR. The conservative step is a stability choice based on actual validation, not a figure-matching adjustment.
+
 ## 论文核心问题
 
 论文研究 RIS 辅助 MIMO-FMCW 雷达在非视距场景下的目标距离和速度估计。RIS 用于重构传播链路，使基站发射信号经 RIS 反射后照射遮挡目标，再由回波链路返回并形成可处理的雷达回波。

@@ -1,5 +1,18 @@
 # Project Architecture
 
+## Stage 3 Update: RIS Phase ADMM Validation
+
+This stage added or modified:
+
+- `functions/compute_path_gain.m`: executable path-gain objective under the current matrix convention, `gain = ||Heff||_F^2`, with `Heff = Hsr^H * Phi * Hrd * Phi^H * Hsr`.
+- `functions/optimize_ris_admm.m`: projected/proximal ADMM surrogate for RIS phase optimization. Because the current `Hrd: Nr x Nr` convention makes `||Heff||_F^2` quartic in `v`, the implementation keeps the ADMM-style `x/u/mu/rho` consensus projection structure but uses finite-difference phase-gradient backtracking for the surrogate `x` step.
+- `main/main_stage3_admm_validation.m`: validation script for unit-modulus phases, random-vs-ADMM path gain, random-vs-ADMM ZF SNR, and convergence output.
+- `outputs/figures/stage3_admm_convergence.png` and `.fig`: ADMM path-gain convergence curve.
+- `outputs/logs/stage3_admm_validation_*.txt`: Stage 3 validation logs.
+- `outputs/data/stage3_admm_validation_*.mat`: Stage 3 validation data.
+
+Still not implemented in Stage 3: `optimize_ris_cd.m`, Fig. 3, Fig. 4, Fig. 5, and Fig. 6 reproduction.
+
 ## 项目定位
 
 本项目不是单脚本复现，而是面向长期调试和扩展的 MATLAB 科研复现工程。目标是逐步复现论文《RIS辅助MIMO-FMCW雷达的非视距目标参数估计方法》中的 RIS 辅助 MIMO-FMCW 雷达非视距目标参数估计方法和仿真实验。
