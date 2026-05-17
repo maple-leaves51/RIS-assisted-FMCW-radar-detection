@@ -1,5 +1,20 @@
 # Debug Log
 
+## 2026-05-17 目标统一整改中的问题
+
+### ADMM 数值发散
+
+- 现象：`rhoScale = 0.2` 时，`x` 和 `mu` 范数快速指数增长，后续 `Heff` 出现 NaN/Inf。
+- 根因：`Q/T` 归一化后，`rho` 仍然相对过小，`rho*I + T` 虽可逆但动力学不稳定。
+- 修复：默认 `rhoScale` 改为 `2`，即按 `2*norm(T,2)` 量级设置 `rho`。
+- 验证：最终 `rho = 0.97179`、`normT = 0.4859`，ADMM 收敛标志为 `true`，primal residual `1.0051e-07`，dual residual `4.047e-07`。
+
+### 代理目标与工程目标冲突
+
+- 现象：quadratic ADMM 和 path_gain optimizer 都会提高 path gain，但降低 ZF-SNR。
+- 根因：ZF-SNR 受 `pinv(Heff)` 和条件数影响，`||Heff||_F^2` 不是充分目标。
+- 处理：新增 `evaluate_ris_objective.m` 和 `optimize_ris_objective_driven.m`，直接优化 `zf_snr`。
+
 ## 2026-05-17 第三阶段 ADMM 整改问题记录
 
 ### 问题 1：原 `optimize_ris_admm.m` 不是严格 ADMM

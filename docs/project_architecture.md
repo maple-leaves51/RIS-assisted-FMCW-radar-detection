@@ -1,5 +1,16 @@
 # Project Architecture
 
+## 第三阶段目标统一整改
+
+本轮新增并调整以下文件：
+
+- `functions/evaluate_ris_objective.m`：统一 RIS 相位目标评估，支持 `path_gain`、`zf_snr`、`zf_snr_with_condition_penalty`。后续优化器必须明确自己优化哪一个目标。
+- `functions/optimize_ris_admm.m`：保留为 `quadratic_admm_approximation`，只优化自己的二次代理目标 `real(v^H Q v)`，不再声称优化真实 path gain 或 ZF-SNR。已加入 `Q/T` 归一化、`rho` 按 `norm(T,2)` 设置，并记录真实 path gain、ZF-SNR 和条件数曲线。
+- `functions/optimize_ris_objective_driven.m`：新增工程目标驱动优化器，采用多初值坐标相位搜索，默认优化 `zf_snr`，保证单位模约束，并逐轮记录目标、path gain、SNR、条件数和更新数。
+- `main/main_stage3_admm_validation.m`：改为算法诊断脚本，对比 random、quadratic ADMM approximation、objective-driven path_gain、objective-driven zf_snr，不再用单一 “passed” 掩盖结果。
+
+当前诊断结论：后续若目标是复现 SNR 曲线，优先考虑 `optimize_ris_objective_driven(..., "zf_snr", ...)`，而不是 quadratic ADMM proxy。
+
 ## 第三阶段整改：ADMM 算法结构修正
 
 本轮将 `functions/optimize_ris_admm.m` 从有限差分相位梯度 surrogate 改为闭式 ADMM 更新结构。当前实现不再使用 finite-difference phase-gradient 作为主体优化逻辑。

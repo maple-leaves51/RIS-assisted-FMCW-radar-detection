@@ -1,5 +1,30 @@
 # Paper Formula Notes
 
+## 第三阶段目标函数统一
+
+当前统一目标函数由 `evaluate_ris_objective.m` 提供：
+
+```text
+Heff = Hsr^H * diag(v) * Hrd * diag(v)^H * Hsr
+path_gain = ||Heff||_F^2
+zf_snr = ||Heff * B_zf||_F^2 / noisePower
+B_zf = sqrt(P / ||pinv(Heff)||_F^2) * pinv(Heff)
+zf_snr_with_condition_penalty = zf_snr / (1 + alpha * log10(cond(Heff))^2)
+```
+
+这次整改后的核心原则是：优化器必须明确优化目标，不能再优化 `trace(Heff)` 代理目标，却用 `path_gain` 或 `zf_snr` 作为主要结论。
+
+`quadratic_admm_approximation` 的目标仍是二次代理：
+
+```text
+Q = (Hsr*Hsr^H) .* transpose(Hrd)
+Qh = (Q + Q^H)/2
+Qh = Qh / max(||Qh||_F, eps)
+T(1:Nr,1:Nr) = -Qh
+```
+
+该 ADMM 只用于诊断代理目标行为。真实工程目标由 `optimize_ris_objective_driven.m` 直接优化。
+
 ## 第三阶段整改后的 ADMM 公式说明
 
 当前工程固定使用：

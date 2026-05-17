@@ -1,5 +1,23 @@
 # Reproduction Assumptions
 
+## 第三阶段目标统一后的结论
+
+1. `quadratic_admm_approximation` 不是后续 SNR 曲线的首选算法。
+   - 它能优化自己的二次代理目标。
+   - 但本轮诊断显示，它会把真实 ZF-SNR 从 `-82.614 dB` 降到 `-86.593 dB`。
+
+2. `path_gain` 和 `zf_snr` 是不同工程目标。
+   - `objective_path_gain` 将 path gain 提高到 `5.4459e-07`，但 SNR 降到 `-85.225 dB`。
+   - 原因是 `Heff` 条件数恶化，ZF 归一化后反而不利。
+
+3. 当前最适合后续 SNR 曲线的算法是 `objective_zf_snr`。
+   - 它直接优化 ZF 归一化后的线性 SNR。
+   - 本轮诊断中 SNR 从 `-82.614 dB` 提升到 `-76.395 dB`。
+   - 条件数从 `5.2381` 降到 `2.2125`，ZF raw power 从 `7.3023e+08` 降到 `1.7442e+08`。
+
+4. 本轮不再把“ADMM 不低于 random”作为充分验收。
+   - 必须同时说明优化目标、真实 path gain、ZF-SNR 和条件数。
+
 ## 第三阶段整改后的合理假设
 
 1. 当前未能严格实现论文原始 `T` 矩阵。

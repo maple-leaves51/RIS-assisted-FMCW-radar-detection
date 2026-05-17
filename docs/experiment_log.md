@@ -1,5 +1,29 @@
 # Experiment Log
 
+## 2026-05-17 第三阶段目标统一诊断
+
+- 运行脚本：`main/main_stage3_admm_validation.m`
+- 输出日志：`outputs/logs/stage3_admm_validation_20260517_173118.txt`
+- 输出数据：`outputs/data/stage3_admm_validation_20260517_173118.mat`
+- 输出图：
+  - `outputs/figures/stage3_objective_diagnostics.png`
+  - `outputs/figures/stage3_objective_diagnostics.fig`
+
+对比结果：
+
+| 方法 | 优化目标 | path gain | SNR dB | cond(Heff) | ZF raw power |
+| --- | --- | ---: | ---: | ---: | ---: |
+| random | none | `8.9838e-08` | `-82.614` | `5.2381` | `7.3023e+08` |
+| quadratic_admm | quadratic_trace_proxy | `4.1721e-07` | `-86.593` | `24.906` | `1.8253e+09` |
+| objective_path_gain | path_gain | `5.4459e-07` | `-85.225` | `24.86` | `1.3323e+09` |
+| objective_zf_snr | zf_snr | `1.2813e-07` | `-76.395` | `2.2125` | `1.7442e+08` |
+
+诊断结论：
+
+- quadratic ADMM 的代理目标改善，但真实 ZF-SNR 变差，说明代理目标与工程目标不一致。
+- path_gain 优化器显著提高 path gain，但同样降低 ZF-SNR，说明单纯增大 `||Heff||_F^2` 不适合作为后续 SNR 曲线优化目标。
+- zf_snr 目标驱动优化器显著提高 ZF-SNR，当前最适合后续图3/图4相关 SNR 实验。
+
 ## 2026-05-17 第三阶段 ADMM 整改验证
 
 - 运行脚本：`main/main_stage3_admm_validation.m`

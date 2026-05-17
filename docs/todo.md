@@ -1,5 +1,23 @@
 # TODO
 
+## 第三阶段目标统一整改状态
+
+### 已完成
+
+- [x] 新增 `evaluate_ris_objective.m`，统一计算 `path_gain`、`zf_snr` 和带条件数惩罚的 ZF-SNR。
+- [x] 修正 `optimize_ris_admm.m`，明确其只优化 `quadratic_trace_proxy`。
+- [x] 对 `Q/T` 做尺度归一化，并按 `norm(T,2)` 设置 `rho`。
+- [x] 新增 `optimize_ris_objective_driven.m`，直接优化工程目标。
+- [x] 将 `main_stage3_admm_validation.m` 改为算法诊断脚本。
+- [x] 输出并保存四类曲线：ADMM 代理目标、真实 path gain、ZF-SNR、条件数。
+- [x] 证明 `objective_zf_snr` 相比 random 有明显 SNR 提升。
+
+### 下一步建议
+
+- [ ] 不建议继续围绕 quadratic ADMM proxy 做图3/图4。
+- [ ] 若用户接受工程目标优先，应使用 `objective_zf_snr` 作为后续 SNR 曲线主算法。
+- [ ] 若仍要论文 ADMM，需要重新定义物理模型，使论文 `T` 矩阵目标和工程目标一致。
+
 ## 当前 ADMM 整改状态
 
 ### 已完成
