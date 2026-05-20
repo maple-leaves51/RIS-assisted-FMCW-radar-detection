@@ -27,6 +27,26 @@
 - [ ] 增加 `fixed_grid_zf_snr` 对 RD 峰值的多随机信道统计，而不只看单次信道。
 - [ ] 若要与论文图6接近，需要定义不同 `Nr` 下的 RD 图对比方案。
 
+## Stage 4.1 完成状态
+
+### 已完成
+
+- [x] 将 Stage 4 主脚本扩展为四目标 RD 验证。
+- [x] 四目标分别进行局部峰值搜索，并输出检测表。
+- [x] 保存 Python 绘图用 source data：`stage4_rd_four_targets_latest.mat`。
+- [x] 保存四目标检测 CSV：`stage4_rd_four_targets_detection_latest.csv`。
+- [x] 新增 Python/matplotlib Nature 风格绘图脚本。
+- [x] 输出二维 Nature 风格复合图：`stage4_rd_four_targets_nature_2d.*`。
+- [x] 输出三维 RD surface 图：`stage4_rd_four_targets_nature_3d.*`。
+- [x] 验证四个目标峰值位置接近真实距离和速度。
+- [x] 验证四个目标 optimized 峰值均高于 random，平均提升约 `10.79 dB`。
+
+### 下一步建议
+
+- [ ] 如果继续推进图5，可在当前四目标回波上增加距离-慢时间幅度谱。
+- [ ] 如果继续推进图6，可在不同 `Nr` 下重复本四目标 RD 流程。
+- [ ] 后续图件可继续使用 `scripts/plot_stage4_nature_figures.py` 的 Python 出图风格，但需要根据新数据拆分脚本或增加参数入口。
+
 ## Stage 3.4 完成状态
 
 ### 已完成

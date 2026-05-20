@@ -19,6 +19,22 @@
 
 Stage 4 当前仍然是单目标、无 DOA、无 CFAR、无杂波、无真实近场几何的基础检测验证。后续若扩展到图5/图6，需要在该基础上再增加多目标、检测门限和更严格的物理几何建模。
 
+## Stage 4.1：四目标 RD 验证与 Nature 风格图
+
+本轮将 Stage 4 主脚本从单目标扩展为四目标验证，并新增 Python 绘图脚本：
+
+- `main/main_stage4_rd_detection.m`：目标改为四个点，`R = [25, 20, 10, 5] m`，`v = [-1, 1, -1, 1] m/s`，并为每个目标分别做局部峰值检测。
+- `scripts/plot_stage4_nature_figures.py`：读取 `outputs/data/stage4_rd_four_targets_latest.mat`，用 Python/matplotlib 输出 Nature 风格二维复合图和三维 RD surface 图。
+- `outputs/data/stage4_rd_four_targets_latest.mat`：Python 绘图 source data。
+- `outputs/data/stage4_rd_four_targets_detection_latest.csv`：四目标检测结果表。
+- `outputs/figures/stage4_rd_four_targets_nature_2d.*`：二维 RD map + 峰值恢复 + 提升柱状图，输出 `svg/pdf/png/tiff`。
+- `outputs/figures/stage4_rd_four_targets_nature_3d.*`：三维 RD surface 对比图，输出 `svg/pdf/png/tiff`。
+
+图形逻辑：
+
+- 二维图是主证据：展示 random RIS 和 fixed-grid ZF-SNR RIS 的四目标 RD map，并量化每个目标的局部峰值提升。
+- 三维图是辅助视觉证据：展示优化前后四个谱峰的表面形态，不作为定量结论的唯一依据。
+
 ## Stage 3.4：ZF-SNR 驱动优化器强化与公平稳定性验证
 
 本阶段继续保持当前工程结构，不进入 RD 图、图3或图4复现。主线目标明确为 `objectiveType = "zf_snr"`，即直接优化 ZF 预编码归一化后的 SNR。`path_gain` 只作为辅助观察指标，`quadratic ADMM proxy` 只作为学习和诊断模块，不作为后续 SNR 曲线主算法。

@@ -42,6 +42,55 @@
 - `main/main_stage2_model_validation.m`：通过，输出 `stage2_model_validation_20260520_204059`
 - `main/main_stage3_zf_snr_stability.m`：通过，8 个 trial failure count 为 `0`
 
+## 2026-05-20 Stage 4.1 四目标 RD 验证与 Nature 风格绘图
+
+- 运行 MATLAB 脚本：`main/main_stage4_rd_detection.m`
+- 运行 Python 绘图脚本：`python scripts/plot_stage4_nature_figures.py`
+- 主优化器：`fixed_grid_zf_snr`
+- 输出日志：`outputs/logs/stage4_rd_detection_20260520_210255.txt`
+- 输出数据：
+  - `outputs/data/stage4_rd_detection_20260520_210255.mat`
+  - `outputs/data/stage4_rd_four_targets_latest.mat`
+  - `outputs/data/stage4_rd_four_targets_detection_latest.csv`
+- Nature 风格二维图：
+  - `outputs/figures/stage4_rd_four_targets_nature_2d.svg`
+  - `outputs/figures/stage4_rd_four_targets_nature_2d.pdf`
+  - `outputs/figures/stage4_rd_four_targets_nature_2d.png`
+  - `outputs/figures/stage4_rd_four_targets_nature_2d.tiff`
+- Nature 风格三维图：
+  - `outputs/figures/stage4_rd_four_targets_nature_3d.svg`
+  - `outputs/figures/stage4_rd_four_targets_nature_3d.pdf`
+  - `outputs/figures/stage4_rd_four_targets_nature_3d.png`
+  - `outputs/figures/stage4_rd_four_targets_nature_3d.tiff`
+
+四目标设置：
+
+| 目标 | 距离 m | 速度 m/s | alpha |
+| --- | ---: | ---: | ---: |
+| T1 | `25` | `-1` | `1.00` |
+| T2 | `20` | `1` | `0.86` |
+| T3 | `10` | `-1` | `0.74` |
+| T4 | `5` | `1` | `0.62` |
+
+检测结果：
+
+| 目标 | random peak dB | optimized peak dB | 提升 dB | optimized 距离 m | optimized 速度 m/s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T1 | `-29.0675` | `-18.2766` | `10.7909` | `24.9` | `-1.0653` |
+| T2 | `-30.3685` | `-19.5840` | `10.7845` | `20.1` | `1.0653` |
+| T3 | `-31.6786` | `-20.8907` | `10.7879` | `9.9` | `-1.0653` |
+| T4 | `-33.2032` | `-22.4240` | `10.7792` | `5.1` | `1.0653` |
+
+验收结果：
+
+- 四个目标的距离误差均约 `0.1 m`。
+- 四个目标的速度误差均约 `0.0653 m/s`。
+- 四个目标的 RD 峰值提升均约 `10.78 dB`。
+- `G_ZF` 提升：`10.7866 dB`。
+- MATLAB 验证状态：`PASS`。
+- `tests/test_stage4_fmcw_rd.m`：`1 Passed, 0 Failed`。
+- Python 绘图脚本通过 `py_compile`，并成功导出 `svg/pdf/png/tiff`。
+
 ## 2026-05-17 Stage 3.4 ZF-SNR 优化器公平稳定性验证
 
 - 运行脚本：`main/main_stage3_optimizer_comparison.m`

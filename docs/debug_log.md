@@ -33,6 +33,21 @@
 
 - 重新运行 `main_stage4_rd_detection.m`，输出图 `stage4_rd_detection_20260520_204249.png`，读图顺序正确。
 
+## 2026-05-20 Stage 4.1 四目标图形 QA
+
+问题：四目标 Nature 风格绘图第一版中，三维图的目标标记放在统一顶部高度，和真实谱峰高度不一致，容易误解为检测点悬浮在谱面之外。
+
+修复：
+
+- Python 脚本中将三维目标标记高度改为对应检测峰值 `peakDb + 1.2 dB`。
+- 对每个目标在三维图中直接标注 `T1` 至 `T4`。
+
+验证：
+
+- 重新运行 `python scripts/plot_stage4_nature_figures.py`。
+- 输出 `stage4_rd_four_targets_nature_2d.*` 和 `stage4_rd_four_targets_nature_3d.*`。
+- Python 脚本通过 `py_compile`。
+
 ## 2026-05-17 Stage 3.4 优化器公平性与运行时间调整
 
 问题 1：初版 `main_stage3_optimizer_comparison.m` 中，`random_best_of_numStarts` 和优化器使用的随机初值数量相同，但优化器内部除第一个初值外会自行生成其余初值，导致两者并非完全相同的 start phases。
