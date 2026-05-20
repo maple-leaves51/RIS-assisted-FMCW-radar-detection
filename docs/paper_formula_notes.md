@@ -1,5 +1,63 @@
 # Paper Formula Notes
 
+## Stage 4：FMCW Beat Signal 与距离-多普勒处理
+
+当前 Stage 4 采用基础解调后 FMCW beat signal 模型：
+
+```text
+y[n,m] = sum_q A_q exp(j 2*pi*(fb_q*n*Ts + fD_q*m*Tc)) + w[n,m]
+```
+
+其中：
+
+```text
+S = B / Tchirp
+lambda = c / fc
+fb_q = 2*S*R_q/c
+fD_q = 2*v_q/lambda
+Ts = 1/fs
+Tc = Tchirp
+```
+
+矩阵约定：
+
+- `Y`: `Nfast x Nchirp`
+- 行：fast-time sample index `n`
+- 列：slow-time chirp index `m`
+- `Nfast = round(fs * Tchirp)`
+- `Nchirp = params.radar.numChirps`
+
+RIS/ZF 链路增益用于回波幅度：
+
+```text
+Heff(v) = Hsr' * diag(v) * Hrd * diag(v)' * Hsr
+B(v) = ZF precoder after power normalization
+G_ZF(v) = ||Heff(v) * B(v)||_F^2
+A_q(v) = sqrt(G_ZF(v)) * alpha_q
+```
+
+距离-多普勒处理：
+
+```text
+Range FFT:   FFT along fast-time dimension
+Doppler FFT: FFT along slow-time dimension, followed by fftshift
+RD_dB = 20*log10(abs(RD_complex) + eps)
+```
+
+注意：当前 `generate_fmcw_echo.m` 生成的是复数解调 beat signal，因此 `range_doppler_fft.m` 保留完整 range-frequency 区间，而不是只取实信号半谱。距离轴为：
+
+```text
+f_range[k] = k * fs / NfftRange
+rangeAxis[k] = f_range[k] * c / (2*S)
+```
+
+速度轴为：
+
+```text
+f_doppler[l] = shifted_l / (NfftDoppler * Tc)
+velocityAxis[l] = f_doppler[l] * lambda / 2
+```
+
 ## Stage 3.4：工程优化目标与相位搜索公式
 
 当前工程主目标不再使用 `trace(Heff)` 或单纯路径增益代理，而是直接使用 ZF 预编码后的 SNR：

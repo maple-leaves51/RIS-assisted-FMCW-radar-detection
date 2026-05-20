@@ -24,11 +24,12 @@ params.radar.bandwidth = 500e6;
 params.radar.chirpTime = 50e-6;
 params.radar.sampleRate = 2e6;
 params.radar.numChirps = 256;
+params.radar.numFastTimeSamples = round(params.radar.sampleRate * params.radar.chirpTime);
 params.radar.rcs = 1;
 params.radar.lambda = params.radar.c / params.radar.fc;
 params.radar.slope = params.radar.bandwidth / params.radar.chirpTime;
 params.radar.rangeResolution = params.radar.c / (2 * params.radar.bandwidth);
-params.radar.velocityResolution = params.radar.lambda / params.radar.chirpTime;
+params.radar.velocityResolution = params.radar.lambda / (2 * params.radar.numChirps * params.radar.chirpTime);
 
 params.power.txPower_dBm = 10;
 params.power.noisePower_dBm = 10;

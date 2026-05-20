@@ -1,5 +1,47 @@
 # Experiment Log
 
+## 2026-05-20 Stage 4 FMCW RD 检测验证
+
+- 运行脚本：`main/main_stage4_rd_detection.m`
+- 主优化器：`fixed_grid_zf_snr`
+- 输出日志：`outputs/logs/stage4_rd_detection_20260520_204249.txt`
+- 输出数据：`outputs/data/stage4_rd_detection_20260520_204249.mat`
+- 输出图：
+  - `outputs/figures/stage4_rd_detection_20260520_204249.png`
+  - `outputs/figures/stage4_rd_detection_20260520_204249.fig`
+
+目标参数：
+
+- 距离：`25 m`
+- 速度：`3 m/s`
+- 散射系数：`alpha = 1`
+- 回波噪声功率：`1e-12 W`
+
+检测结果：
+
+| 指标 | random RIS | fixed-grid ZF-SNR optimized RIS |
+| --- | ---: | ---: |
+| `G_ZF = ||Heff*B||_F^2` | `4.5576e-11` | `5.4626e-10` |
+| Stage 3 风格 ZF-SNR | `-83.4126 dB` | `-72.6260 dB` |
+| RD 局部目标峰值 | `-28.4769 dB` | `-17.6983 dB` |
+| 峰值距离 | `24.9 m` | `24.9 m` |
+| 峰值速度 | `3.0438 m/s` | `3.0438 m/s` |
+
+验收：
+
+- `G_ZF` 提升：`10.7866 dB`
+- RD 峰值提升：`10.7786 dB`
+- 距离检测：`PASS`
+- 速度检测：`PASS`
+- optimized 峰值高于 random：`PASS`
+- 总体验收：`PASS`
+
+回归验证：
+
+- `tests/test_stage4_fmcw_rd.m`：`1 Passed, 0 Failed`
+- `main/main_stage2_model_validation.m`：通过，输出 `stage2_model_validation_20260520_204059`
+- `main/main_stage3_zf_snr_stability.m`：通过，8 个 trial failure count 为 `0`
+
 ## 2026-05-17 Stage 3.4 ZF-SNR 优化器公平稳定性验证
 
 - 运行脚本：`main/main_stage3_optimizer_comparison.m`

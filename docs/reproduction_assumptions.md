@@ -1,5 +1,19 @@
 # Reproduction Assumptions
 
+## Stage 4：FMCW RD 检测合理复现假设
+
+1. Stage 4 第一版只做单目标检测验证，不引入 DOA、多目标、CFAR、杂波、真实近场几何或 ADMM/CD。
+
+2. 当前回波模型是解调后的复数 beat signal，不模拟完整发射 chirp、传播延迟、混频和低通滤波链路。该简化用于先验证距离-多普勒轴、目标峰值位置和 RIS/ZF 增益对 RD 峰值的影响。
+
+3. `range_doppler_fft.m` 对复数 beat signal 保留完整 range FFT 频谱。若以后改成实采样或真实 ADC 模型，需要重新检查 range 轴和单边/双边谱处理。
+
+4. Stage 4 主脚本使用受控 echo-domain 噪声功率 `echoNoisePower_W = 1e-12`。这是为了让单目标 RD 图在当前保守路径损耗和 Stage 2/3 噪声设定下可见；它不等同于论文绝对链路预算，也不用于声称论文图5/图6的数值复现。
+
+5. 当前 optimized RIS 回波幅度使用 `A = sqrt(G_ZF) * alpha`，其中 `G_ZF = ||Heff * B||_F^2`。这与 Stage 3 主线 `fixed_grid_zf_snr` 的优化目标一致，避免用 path gain 替代 ZF 后工程目标。
+
+6. 当前目标设置为 `R = 25 m`、`v = 3 m/s`、`alpha = 1`，用于单目标 smoke validation。后续多目标图需要另行定义目标列表、幅度归一化和检测规则。
+
 ## Stage 3.4：ZF-SNR 主线优化假设
 
 1. 当前工程把 `zf_snr` 作为 RIS 相位优化主目标，而不是把 `path_gain = ||Heff||_F^2` 作为主目标。原因是 Stage 3 诊断已经显示：path gain 增大可能导致 `Heff` 条件数变差，进而使 ZF 归一化后的 SNR 下降。

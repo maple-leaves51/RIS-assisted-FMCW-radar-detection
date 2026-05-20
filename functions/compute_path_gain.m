@@ -37,7 +37,6 @@ if size(Hrd, 1) ~= Nr || size(Hrd, 2) ~= Nr
         "Hrd must be Nr x Nr. Got Hrd %s and Nr=%d.", mat2str(size(Hrd)), Nr);
 end
 
-Phi = diag(v);
-Heff = Hsr' * Phi * Hrd * Phi' * Hsr;
+[Heff, Phi] = compute_effective_channel(Hsr, Hrd, v);
 gain = norm(Heff, "fro")^2;
 end

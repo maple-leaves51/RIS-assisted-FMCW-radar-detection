@@ -1,5 +1,38 @@
 # Debug Log
 
+## 2026-05-20 Stage 4 range FFT 轴修正
+
+问题：最初的 Stage 4 单元测试中，目标距离 `25 m` 的 RD 峰值被检测到 `0 m`，测试失败。
+
+定位：
+
+- `generate_fmcw_echo.m` 生成的是复数解调 beat signal。
+- `R = 25 m`、`S = 500 MHz / 50 us` 时，`fb = 2*S*R/c ≈ 1.67 MHz`。
+- 当前采样率 `fs = 2 MHz`，复数采样可以表示 `0` 到接近 `fs` 的正频率；但初版 `range_doppler_fft.m` 按实信号处理，只保留了 `0` 到 `fs/2` 的半谱，导致 25 m 目标频率被丢弃。
+
+修复：
+
+- `range_doppler_fft.m` 改为保留完整 range FFT 频谱，range bins 数为 `nfftRange`。
+- 文档中明确记录：当前模型是复数 beat signal，不能按实信号单边谱处理。
+
+验证：
+
+- `tests/test_stage4_fmcw_rd.m` 通过，单目标峰值距离和速度均接近真实值。
+- `main/main_stage4_rd_detection.m` 通过，峰值位置为 `24.9 m` 和 `3.0438 m/s`。
+
+## 2026-05-20 Stage 4 图像标注修正
+
+问题：峰值柱状图中 MATLAB `categorical` 默认排序导致类别显示为 `optimized/random`，与代码输入顺序不一致；随后文字标注与负值柱状图发生重叠。
+
+修复：
+
+- 显式设置 categorical 顺序为 `random -> optimized`。
+- 将提升值移动到柱状图标题中，避免文本覆盖柱子。
+
+验证：
+
+- 重新运行 `main_stage4_rd_detection.m`，输出图 `stage4_rd_detection_20260520_204249.png`，读图顺序正确。
+
 ## 2026-05-17 Stage 3.4 优化器公平性与运行时间调整
 
 问题 1：初版 `main_stage3_optimizer_comparison.m` 中，`random_best_of_numStarts` 和优化器使用的随机初值数量相同，但优化器内部除第一个初值外会自行生成其余初值，导致两者并非完全相同的 start phases。

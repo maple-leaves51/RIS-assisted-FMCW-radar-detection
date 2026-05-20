@@ -1,5 +1,32 @@
 # TODO
 
+## Stage 4 完成状态
+
+### 已完成
+
+- [x] 实现 `functions/compute_effective_channel.m`，统一封装 `Heff` 计算。
+- [x] 实现 `functions/generate_fmcw_echo.m`，生成解调后复数 FMCW beat signal。
+- [x] 实现 `functions/range_doppler_fft.m`，输出 RD 复谱、dB 图、距离轴和速度轴。
+- [x] 新增 `main/main_stage4_rd_detection.m`，对比 random RIS 和 `fixed_grid_zf_snr` optimized RIS。
+- [x] 新增 `tests/test_stage4_fmcw_rd.m`，验证单目标 RD 峰值接近真实距离和速度。
+- [x] 生成 Stage 4 RD 对比图、日志和 `.mat` 数据。
+- [x] 验证 optimized RIS 的 RD 目标峰值高于 random RIS。
+- [x] 回归运行 Stage 2 和 Stage 3.3 核心脚本，未发现破坏。
+
+### 当前不做
+
+- [ ] 不实现 ADMM/CD。
+- [ ] 不复现图3/图4。
+- [ ] 不做多目标 RD 图。
+- [ ] 不做 DOA、CFAR、杂波或真实近场几何。
+
+### 下一步建议
+
+- [ ] 在单目标模型稳定后，再扩展到多目标 `targets.range_m`、`targets.velocity_mps`、`targets.alpha` 向量输入。
+- [ ] 在进入图5/图6前，明确 RD 图使用的噪声、归一化、动态范围和目标幅度设定。
+- [ ] 增加 `fixed_grid_zf_snr` 对 RD 峰值的多随机信道统计，而不只看单次信道。
+- [ ] 若要与论文图6接近，需要定义不同 `Nr` 下的 RD 图对比方案。
+
 ## Stage 3.4 完成状态
 
 ### 已完成

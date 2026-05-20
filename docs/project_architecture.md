@@ -1,5 +1,24 @@
 # Project Architecture
 
+## Stage 4：FMCW 回波模型与距离-多普勒检测验证
+
+本阶段新增单目标 FMCW beat signal 生成、距离-多普勒 FFT 和 RD 图检测验证。当前主线 RIS 相位优化器只使用 `fixed_grid_zf_snr`，不继续推进 ADMM/CD，也不复现图3/图4。
+
+新增或修改文件：
+
+- `config/paper_params.m`：新增 `params.radar.numFastTimeSamples = round(sampleRate * chirpTime)`；修正阶段性速度分辨率字段为 `lambda / (2 * Nchirp * Tchirp)`。
+- `functions/compute_effective_channel.m`：新增等效信道封装，统一计算 `Phi = diag(v)` 和 `Heff = Hsr' * Phi * Hrd * Phi' * Hsr`。
+- `functions/compute_path_gain.m`：改为复用 `compute_effective_channel.m`，避免重复写等效信道公式。
+- `functions/generate_fmcw_echo.m`：实现解调后 FMCW beat signal 模型，输出 `Nfast x Nchirp` 复数回波矩阵。
+- `functions/range_doppler_fft.m`：实现 range FFT 和 Doppler FFT，Doppler 维使用 `fftshift`，输出 `RD_complex`、`RD_dB`、`rangeAxis`、`velocityAxis`。
+- `main/main_stage4_rd_detection.m`：新增 Stage 4 主脚本，对比 random RIS 和 `fixed_grid_zf_snr` optimized RIS 的 RD 图与目标峰值。
+- `tests/test_stage4_fmcw_rd.m`：新增轻量 MATLAB 单元测试，验证单目标 RD 峰值位置接近真实距离和速度。
+- `outputs/figures/stage4_rd_detection_*.png/.fig`：保存 random RIS、optimized RIS 和峰值柱状图。
+- `outputs/logs/stage4_rd_detection_*.txt`：保存峰值检测和 PASS/FAIL 日志。
+- `outputs/data/stage4_rd_detection_*.mat`：保存回波、RD 谱、坐标轴、检测结果和参数。
+
+Stage 4 当前仍然是单目标、无 DOA、无 CFAR、无杂波、无真实近场几何的基础检测验证。后续若扩展到图5/图6，需要在该基础上再增加多目标、检测门限和更严格的物理几何建模。
+
 ## Stage 3.4：ZF-SNR 驱动优化器强化与公平稳定性验证
 
 本阶段继续保持当前工程结构，不进入 RD 图、图3或图4复现。主线目标明确为 `objectiveType = "zf_snr"`，即直接优化 ZF 预编码归一化后的 SNR。`path_gain` 只作为辅助观察指标，`quadratic ADMM proxy` 只作为学习和诊断模块，不作为后续 SNR 曲线主算法。
