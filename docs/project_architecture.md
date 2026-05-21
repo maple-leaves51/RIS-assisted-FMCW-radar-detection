@@ -1,5 +1,17 @@
 # Project Architecture
 
+## Stage 4.5：CA-CFAR 检测概率 Pd-vs-SNR
+
+本轮新增 Stage 4 Monte Carlo 检测概率脚本，用于比较 NLOS `No RIS`、`Random RIS` 和 `Fixed-grid ZF-SNR optimized RIS` 在不同回波 SNR 下的四目标 CA-CFAR 检测概率。
+
+- `main/main_stage4_pd_vs_snr.m`：新增 quick/full 双模式主函数。它复用四目标 FMCW 回波、RD FFT、固定网格 ZF-SNR RIS 优化器和 `detect_rd_targets_cfar.m`，输出每目标 Pd、平均 Pd、进度打印、数据、图和日志。
+- `tests/test_stage4_pd_vs_snr.m`：新增 quick smoke test，检查 Pd 输出结构、SNR 轴、目标维度和 CFAR 参数。
+- `outputs/data/stage4_pd_vs_snr_*.mat`：保存 SNR 轴、噪声功率轴、命中计数、每目标 Pd、平均 Pd、RIS 增益和运行配置。
+- `outputs/figures/stage4_pd_vs_snr_*.png`：保存 average Pd 曲线和 random/optimized 每目标 Pd 曲线。
+- `outputs/logs/stage4_pd_vs_snr_*.txt`：保存命令行进度行和 quick/full 汇总结果。
+
+当前主横轴定义为 optimized RIS 无噪声 beat signal 平均样本功率参考下的 `echo SNR dB`；日志和 `.mat` 同时保留每个点对应的 `echoNoisePower_W`。
+
 ## Stage 4.4：全图 CA-CFAR 检测与真值邻域关联
 
 本轮在保留 Stage 4 局部峰值检测输出的基础上，增加全图 CA-CFAR 检测链路。CA-CFAR 先在完整 RD 功率图上产生检测单元和局部极大值，再把检测峰与四个真值目标邻域关联；关联失败时保留未命中状态，不用真值邻域局部峰替代 CFAR 结果。

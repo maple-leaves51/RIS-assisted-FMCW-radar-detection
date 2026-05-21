@@ -1,5 +1,23 @@
 # TODO
 
+## Stage 4.5 完成状态
+
+### 已完成
+
+- [x] 新增 `main/main_stage4_pd_vs_snr.m`，支持 `quick` 和 `full` 模式。
+- [x] 用 CA-CFAR 统计 No RIS、Random RIS、Fixed-grid optimized RIS 的四目标 Pd。
+- [x] 同时保存 `echo SNR dB` 轴和 `echoNoisePower_W` 轴。
+- [x] 输出 average Pd 曲线和每目标 Pd 曲线。
+- [x] 为本地 full 模式加入逐 trial `fprintf` 进度表。
+- [x] 新增 `tests/test_stage4_pd_vs_snr.m` 并完成 quick 模式 smoke test。
+- [x] 实际运行 quick 模式并验证 optimized RIS 检测概率过渡区优于 random RIS。
+
+### 下一步建议
+
+- [ ] 本地运行 `full` 模式，把 Monte Carlo 次数提高到 `100` 或更多后保存正式 Pd 曲线。
+- [ ] 根据 full 结果决定是否打开 `resampleChannelPerTrial` 做跨信道统计。
+- [ ] 若需要固定虚警率下的更完整检测性能，可后续增加 Pd/Pfa 或 ROC 统计。
+
 ## Stage 4.4 完成状态
 
 ### 已完成

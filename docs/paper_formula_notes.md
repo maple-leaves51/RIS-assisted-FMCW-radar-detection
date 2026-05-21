@@ -1,5 +1,33 @@
 # Paper Formula Notes
 
+## Stage 4.5：Pd-vs-SNR 统计定义
+
+当前检测概率实验对每个回波 SNR 点和每个目标统计 CA-CFAR 关联命中：
+
+```text
+Pd_q(SNR_i, method) = hitCount_q(SNR_i, method) / Nmc
+Pd_avg(SNR_i, method) = mean_q Pd_q(SNR_i, method)
+```
+
+其中 `hitCount_q` 只累计 `detect_rd_targets_cfar.m` 在目标 `q` 真值邻域内关联到的全图 CFAR 峰。
+
+当前主横轴采用 optimized RIS 参考回波定义：
+
+```text
+Pref,opt = mean(|Yopt,noiseless[n,m]|^2)
+echoNoisePower_W(SNR_i) = Pref,opt / 10^(SNR_i/10)
+```
+
+同一个 `SNR_i` 点下，三组方法使用同一 `echoNoisePower_W`：
+
+```text
+No RIS:        Y = noise only
+Random RIS:    Y = target echo with sqrt(G_ZF_random) + noise
+Optimized RIS: Y = target echo with sqrt(G_ZF_optimized) + noise
+```
+
+这样 `Random RIS` 与 `Optimized RIS` 的 Pd 差异保留了当前 RIS/ZF 链路增益差异，而不是把每个方法单独归一到相同自身 SNR。
+
 ## Stage 4.4：二维 CA-CFAR 与目标关联
 
 CFAR 检测在 RD 线性功率域执行：

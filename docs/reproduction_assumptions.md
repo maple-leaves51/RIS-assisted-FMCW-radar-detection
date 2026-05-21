@@ -1,5 +1,13 @@
 # Reproduction Assumptions
 
+## Stage 4.5：Pd-vs-SNR 合理复现假设
+
+1. `Pd-vs-SNR` 主横轴使用 optimized RIS 无噪声 beat signal 平均样本功率作为参考回波功率。该定义便于在同一噪声环境下比较 random 与 optimized RIS 的系统检测收益。
+2. quick 模式默认固定一组信道和 RIS 相位，仅在每个 Monte Carlo trial 中重采样回波噪声；它用于趋势验收，不替代正式统计。
+3. full 模式默认 `100` 次 Monte Carlo，并预留 `resampleChannelPerTrial` 开关。若开启该开关，每个 trial 会重新生成信道、随机相位和固定网格 optimized RIS，相应噪声功率也按该 trial 的 optimized 参考回波重新换算。
+4. 当前 `No RIS` 组仍是遮挡 NLOS 零目标回波基线，因此 Pd 理应最低，通常接近真值邻域内噪声 CFAR 峰关联概率。
+5. 当前 Pd 统计采用 CA-CFAR 命中，不采用 Stage 4 旧局部峰值检测结果。
+
 ## Stage 4.4：CA-CFAR 检测合理复现假设
 
 1. 当前检测分支采用二维 CA-CFAR，输入为 RD 复谱的线性功率 `abs(RD_complex).^2`，而不是 dB 图。

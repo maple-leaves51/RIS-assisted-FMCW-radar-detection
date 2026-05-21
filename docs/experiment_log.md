@@ -1,5 +1,37 @@
 # Experiment Log
 
+## 2026-05-21 Stage 4.5 CA-CFAR Pd-vs-SNR quick 验证
+
+- 运行主函数：`main_stage4_pd_vs_snr("quick")`
+- 模式：`quick`
+- Monte Carlo 次数：`8`
+- 信道设置：固定一组 Stage 4 信道和 RIS 相位，每个 trial 重采样回波噪声。
+- 检测规则：全图 CA-CFAR + 真值目标邻域关联。
+- SNR 轴：`[-40, -35, -30, -25, -20, -15, -10] dB`
+- 输出图：`outputs/figures/stage4_pd_vs_snr_quick_20260521_134702.png`
+- 输出数据：`outputs/data/stage4_pd_vs_snr_quick_20260521_134702.mat`
+- 输出日志：`outputs/logs/stage4_pd_vs_snr_quick_20260521_134702.txt`
+
+平均 Pd 结果：
+
+| Echo SNR dB | No RIS | Random RIS | Fixed-grid optimized RIS |
+| ---: | ---: | ---: | ---: |
+| `-40` | `0` | `0` | `0` |
+| `-35` | `0` | `0` | `0` |
+| `-30` | `0` | `0` | `0.0625` |
+| `-25` | `0` | `0` | `0.25` |
+| `-20` | `0` | `0.0625` | `0.9375` |
+| `-15` | `0` | `0.3125` | `1` |
+| `-10` | `0` | `0.90625` | `1` |
+
+验收结论：
+
+- quick 脚本无报错，`.png`、`.mat` 和 `.txt` 输出成功。
+- 命令行逐 trial 表格式打印已启用，可用于后续 full 模式本地观察趋势。
+- optimized RIS 的平均 Pd 过渡区明显早于 random RIS。
+- No RIS 在当前遮挡 NLOS 零目标回波模型下保持最低。
+- quick 统计只用于功能验收和趋势预检查；正式结果应运行 full 模式或提高 Monte Carlo 次数。
+
 ## 2026-05-21 Stage 4.4 全图 CA-CFAR 检测验证
 
 - 运行脚本：`main/main_stage4_rd_detection.m`、`scripts/plot_stage4_nature_figures.py`
