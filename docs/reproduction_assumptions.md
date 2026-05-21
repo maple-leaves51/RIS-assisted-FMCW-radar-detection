@@ -1,5 +1,11 @@
 # Reproduction Assumptions
 
+## Stage 4.3：无 RIS 对照组合理复现假设
+
+1. 当前 Stage 4 主场景仍是 RIS 辅助非视距探测，尚未加入独立 direct-path 回波链路。
+2. 因此 `No RIS` 组暂按遮挡 NLOS 基线处理：目标回波幅度为零，只保留与 RIS 组匹配的 echo-domain 噪声实现。
+3. 该组用于说明当前 NLOS RIS 链路是否让目标从噪声底中显现，不等价于“直达链路普通雷达”的物理对照。
+
 ## Stage 4：FMCW RD 检测合理复现假设
 
 1. Stage 4 第一版只做单目标检测验证，不引入 DOA、多目标、CFAR、杂波、真实近场几何或 ADMM/CD。

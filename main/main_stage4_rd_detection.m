@@ -53,19 +53,24 @@ numTargets = numel(targets.range_m);
 % from the conservative link-budget noise used in Stage 2/3 SNR diagnostics.
 echoNoisePower_W = 1e-12;
 echoSeed = params.repro.rngSeed + 200;
+[YnoRis, echoMetaNoRis] = generate_fmcw_echo( ...
+    params, targets, 0, echoNoisePower_W, struct("rngSeed", echoSeed));
 [Yrandom, echoMetaRandom] = generate_fmcw_echo( ...
     params, targets, sqrt(randomGain), echoNoisePower_W, struct("rngSeed", echoSeed));
 [Yoptimized, echoMetaOptimized] = generate_fmcw_echo( ...
     params, targets, sqrt(optimizedGain), echoNoisePower_W, struct("rngSeed", echoSeed));
 
-[RDrandom, RDrandomDb, rangeAxis, velocityAxis, rdMeta] = range_doppler_fft(Yrandom, params);
+[RDnoRis, RDnoRisDb, rangeAxis, velocityAxis, rdMeta] = range_doppler_fft(YnoRis, params);
+[RDrandom, RDrandomDb] = range_doppler_fft(Yrandom, params);
 [RDoptimized, RDoptimizedDb] = range_doppler_fft(Yoptimized, params);
 
 searchWindow = struct();
 searchWindow.rangeHalfWidth_m = max(1.0, 3 * rdMeta.rangeResolution_m);
 searchWindow.velocityHalfWidth_m = max(0.5, 3 * rdMeta.velocityResolution_mps);
+noRisDetection = detect_target_peaks(RDnoRisDb, rangeAxis, velocityAxis, targets, searchWindow);
 randomDetection = detect_target_peaks(RDrandomDb, rangeAxis, velocityAxis, targets, searchWindow);
 optimizedDetection = detect_target_peaks(RDoptimizedDb, rangeAxis, velocityAxis, targets, searchWindow);
+rdPeakImprovementVsNoRisDb = optimizedDetection.peakDb - noRisDetection.peakDb;
 rdPeakImprovementDb = optimizedDetection.peakDb - randomDetection.peakDb;
 
 rangePass = all(abs(optimizedDetection.peakRange_m - targets.range_m) <= searchWindow.rangeHalfWidth_m);
@@ -80,18 +85,20 @@ figPath = fullfile(figureDir, "stage4_rd_detection_" + timestamp + ".fig");
 logPath = fullfile(logDir, "stage4_rd_detection_" + timestamp + ".txt");
 dataPath = fullfile(dataDir, "stage4_rd_detection_" + timestamp + ".mat");
 
-create_stage4_figure(RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
-    targets, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath);
+create_stage4_figure(RDnoRisDb, RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
+    targets, noRisDetection, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath);
 
 detectionTable = table((1:numTargets).', targets.range_m(:), targets.velocity_mps(:), targets.alpha(:), ...
-    randomDetection.peakDb(:), optimizedDetection.peakDb(:), rdPeakImprovementDb(:), ...
-    randomDetection.peakRange_m(:), optimizedDetection.peakRange_m(:), ...
-    randomDetection.peakVelocity_mps(:), optimizedDetection.peakVelocity_mps(:), ...
+    noRisDetection.peakDb(:), randomDetection.peakDb(:), optimizedDetection.peakDb(:), ...
+    rdPeakImprovementVsNoRisDb(:), rdPeakImprovementDb(:), ...
+    noRisDetection.peakRange_m(:), randomDetection.peakRange_m(:), optimizedDetection.peakRange_m(:), ...
+    noRisDetection.peakVelocity_mps(:), randomDetection.peakVelocity_mps(:), optimizedDetection.peakVelocity_mps(:), ...
     optimizedDetection.rangeError_m(:), optimizedDetection.velocityError_mps(:), ...
     VariableNames=["targetIdx", "trueRange_m", "trueVelocity_mps", "alpha", ...
-    "randomPeakDb", "optimizedPeakDb", "peakImprovementDb", ...
-    "randomPeakRange_m", "optimizedPeakRange_m", ...
-    "randomPeakVelocity_mps", "optimizedPeakVelocity_mps", ...
+    "noRisPeakDb", "randomPeakDb", "optimizedPeakDb", ...
+    "peakImprovementVsNoRisDb", "peakImprovementVsRandomDb", ...
+    "noRisPeakRange_m", "randomPeakRange_m", "optimizedPeakRange_m", ...
+    "noRisPeakVelocity_mps", "randomPeakVelocity_mps", "optimizedPeakVelocity_mps", ...
     "optimizedRangeError_m", "optimizedVelocityError_mps"]);
 
 sourceDataPath = fullfile(dataDir, "stage4_rd_four_targets_latest.mat");
@@ -99,12 +106,14 @@ sourceCsvPath = fullfile(dataDir, "stage4_rd_four_targets_detection_latest.csv")
 
 save(dataPath, "params", "channelMeta", "Hsr", "Hrd", "vRandom", "vOptimized", ...
     "optInfo", "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
-    "targets", "echoNoisePower_W", "Yrandom", "Yoptimized", "RDrandom", ...
-    "RDoptimized", "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", ...
-    "rdMeta", "echoMetaRandom", "echoMetaOptimized", "randomDetection", ...
-    "optimizedDetection", "rdPeakImprovementDb", "detectionTable", "validationPassed");
-save(sourceDataPath, "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", ...
-    "targets", "randomDetection", "optimizedDetection", "rdPeakImprovementDb", ...
+    "targets", "echoNoisePower_W", "YnoRis", "Yrandom", "Yoptimized", ...
+    "RDnoRis", "RDrandom", "RDoptimized", "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", ...
+    "rangeAxis", "velocityAxis", "rdMeta", "echoMetaNoRis", "echoMetaRandom", ...
+    "echoMetaOptimized", "noRisDetection", "randomDetection", "optimizedDetection", ...
+    "rdPeakImprovementVsNoRisDb", "rdPeakImprovementDb", "detectionTable", "validationPassed");
+save(sourceDataPath, "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", ...
+    "targets", "noRisDetection", "randomDetection", "optimizedDetection", ...
+    "rdPeakImprovementVsNoRisDb", "rdPeakImprovementDb", ...
     "detectionTable", "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
     "gainImprovementDb", "validationPassed");
 writetable(detectionTable, sourceCsvPath);
@@ -112,6 +121,7 @@ writetable(detectionTable, sourceCsvPath);
 logLines = [
     "Stage 4 FMCW RD detection validation"
     "Optimizer: fixed_grid_zf_snr"
+    "No RIS model: blocked NLOS baseline with zero target echo amplitude and matched echo noise"
     "Targets: 4"
     "Target range m: " + strjoin(string(targets.range_m.'), ", ")
     "Target velocity m/s: " + strjoin(string(targets.velocity_mps.'), ", ")
@@ -120,12 +130,14 @@ logLines = [
     "G_ZF improvement dB: " + string(gainImprovementDb)
     "Random SNR dB: " + string(randomMetrics.snrDb)
     "Optimized SNR dB: " + string(optimizedMetrics.snrDb)
+    "No RIS RD local noise peak dB: " + strjoin(string(noRisDetection.peakDb.'), ", ")
     "Random RD peak dB: " + strjoin(string(randomDetection.peakDb.'), ", ")
     "Random peak range m: " + strjoin(string(randomDetection.peakRange_m.'), ", ")
     "Random peak velocity m/s: " + strjoin(string(randomDetection.peakVelocity_mps.'), ", ")
     "Optimized RD peak dB: " + strjoin(string(optimizedDetection.peakDb.'), ", ")
     "Optimized peak range m: " + strjoin(string(optimizedDetection.peakRange_m.'), ", ")
     "Optimized peak velocity m/s: " + strjoin(string(optimizedDetection.peakVelocity_mps.'), ", ")
+    "RD peak improvement vs no RIS dB: " + strjoin(string(rdPeakImprovementVsNoRisDb.'), ", ")
     "RD peak improvement dB: " + strjoin(string(rdPeakImprovementDb.'), ", ")
     "Range pass: " + string(rangePass)
     "Velocity pass: " + string(velocityPass)
@@ -187,13 +199,22 @@ for targetIdx = 1:numTargets
 end
 end
 
-function create_stage4_figure(RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
-    targets, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath)
-fig = figure("Visible", "off", "Position", [100, 100, 1250, 720]);
-tiledlayout(1, 3);
+function create_stage4_figure(RDnoRisDb, RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
+    targets, noRisDetection, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath)
+fig = figure("Visible", "off", "Position", [100, 100, 1500, 720]);
+tiledlayout(1, 4);
 
-mapMax = max([RDrandomDb(:); RDoptimizedDb(:)]);
+mapMax = max([RDnoRisDb(:); RDrandomDb(:); RDoptimizedDb(:)]);
 mapLimits = [mapMax - 55, mapMax];
+
+nexttile;
+imagesc(velocityAxis, rangeAxis, RDnoRisDb);
+axis xy; grid on; clim(mapLimits); colorbar;
+xlabel("Velocity (m/s)"); ylabel("Range (m)");
+title("No RIS RD map");
+hold on;
+plot(targets.velocity_mps, targets.range_m, "rx", "LineWidth", 1.5, "MarkerSize", 9);
+plot(noRisDetection.peakVelocity_mps, noRisDetection.peakRange_m, "wo", "LineWidth", 1.2, "MarkerSize", 7);
 
 nexttile;
 imagesc(velocityAxis, rangeAxis, RDrandomDb);
@@ -216,13 +237,13 @@ plot(optimizedDetection.peakVelocity_mps, optimizedDetection.peakRange_m, "wo", 
 nexttile;
 targetLabels = categorical("T" + string(1:numel(targets.range_m)), ...
     "T" + string(1:numel(targets.range_m)), "Ordinal", true);
-bar(targetLabels, [randomDetection.peakDb(:), optimizedDetection.peakDb(:)]);
+bar(targetLabels, [noRisDetection.peakDb(:), randomDetection.peakDb(:), optimizedDetection.peakDb(:)]);
 grid on; ylabel("Local target peak (dB)");
 title("Target peak comparison (mean +" + compose("%.2f dB", mean(rdPeakImprovementDb)) + ")");
-ylim([min([randomDetection.peakDb(:); optimizedDetection.peakDb(:)]) - 5, 0]);
-legend(["random", "optimized"], "Location", "southoutside", "Orientation", "horizontal");
+ylim([min([noRisDetection.peakDb(:); randomDetection.peakDb(:); optimizedDetection.peakDb(:)]) - 5, 0]);
+legend(["no RIS", "random", "optimized"], "Location", "southoutside", "Orientation", "horizontal");
 
-sgtitle("Stage 4 single-target range-Doppler detection");
+sgtitle("Stage 4 four-target range-Doppler detection");
 saveas(fig, pngPath);
 savefig(fig, figPath);
 close(fig);

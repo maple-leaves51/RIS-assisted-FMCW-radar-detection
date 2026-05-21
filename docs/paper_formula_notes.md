@@ -1,5 +1,15 @@
 # Paper Formula Notes
 
+## Stage 4.3：三组 RD 幅度约定
+
+```text
+G_ZF(v) = ||Heff(v) * B(v)||_F^2
+A_q(random/optimized) = sqrt(G_ZF(v)) * alpha_q
+A_q(no RIS) = 0
+```
+
+`No RIS` 当前表示遮挡 NLOS 零目标回波基线；random 与 optimized 组仍沿用同一等效信道和 ZF 归一化链路。
+
 ## Stage 4：FMCW Beat Signal 与距离-多普勒处理
 
 当前 Stage 4 采用基础解调后 FMCW beat signal 模型：

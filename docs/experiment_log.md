@@ -1,5 +1,12 @@
 # Experiment Log
 
+## 2026-05-21 Stage 4.3 三组 RD 图复核
+
+- 运行脚本：`main/main_stage4_rd_detection.m`、`scripts/plot_stage4_nature_figures.py`。
+- 对照组：无 RIS、随机相位 RIS、固定网格 ZF-SNR 优化 RIS。
+- optimized 相比 random 的四目标 RD 峰值提升约为 `[10.7909, 10.7845, 10.7879, 10.7792] dB`。
+- 图形输出：`stage4_rd_four_targets_nature_2d.*`、`stage4_rd_four_targets_nature_3d_clean_surface_no_ris.*`、`stage4_rd_four_targets_nature_3d_clean_surface_random_ris.*`、`stage4_rd_four_targets_nature_3d_clean_surface_optimized_ris.*`、`stage4_rd_four_targets_nature_3d_wireframe.*`。
+
 ## 2026-05-20 Stage 4 FMCW RD 检测验证
 
 - 运行脚本：`main/main_stage4_rd_detection.m`
@@ -90,6 +97,34 @@
 - MATLAB 验证状态：`PASS`。
 - `tests/test_stage4_fmcw_rd.m`：`1 Passed, 0 Failed`。
 - Python 绘图脚本通过 `py_compile`，并成功导出 `svg/pdf/png/tiff`。
+
+## 2026-05-21 Stage 4.2 三维 RD 图论文化精简
+
+- 修改脚本：`scripts/plot_stage4_nature_figures.py`
+- 数据输入保持不变：`outputs/data/stage4_rd_four_targets_latest.mat`
+- 二维主图保持输出：`outputs/figures/stage4_rd_four_targets_nature_2d.*`
+- 新增三维 clean surface 输出：`outputs/figures/stage4_rd_four_targets_nature_3d_clean_surface.*`
+- 新增三维 wireframe 输出：`outputs/figures/stage4_rd_four_targets_nature_3d_wireframe.*`
+
+绘图调整：
+
+- 对三维谱图使用低端动态范围软压缩：以 `vmax - 40 dB` 为参考下限，压窄更弱谱值的起伏而不删除噪声底。
+- 降低三维采样密度并改用浅色 surface / wireframe，弱化噪声底的材质感和视觉干扰。
+- clean surface 版本改为浅蓝单色曲面和细边线，不再使用彩色材质型 surface。
+- wireframe 版本改为简洁蓝色线框。
+- 三维图只保留红色峰值 `x` 标记，不再在三维图中重复 `T1` 至 `T4` 文字。
+- 标题简化为 `Random RIS` 和 `Optimized RIS`。
+
+执行验证：
+
+- `python -m py_compile scripts/plot_stage4_nature_figures.py`：通过。
+- `python scripts/plot_stage4_nature_figures.py`：通过，成功导出 `png/svg/pdf/tiff`。
+
+当前建议：
+
+- 论文主图仍优先使用二维 RD 复合图。
+- 若正文需要三维谱图，优先采用 `clean_surface`。
+- `wireframe` 更适合作为附图、补充材料或方法说明图。
 
 ## 2026-05-17 Stage 3.4 ZF-SNR 优化器公平稳定性验证
 

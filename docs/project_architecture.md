@@ -1,5 +1,12 @@
 # Project Architecture
 
+## Stage 4.3：三组 RD 图形链路更新
+
+- `main/main_stage4_rd_detection.m` 同步输出无 RIS、随机相位 RIS、固定网格 ZF-SNR 优化 RIS 三组四目标 RD 数据。
+- `scripts/plot_stage4_nature_figures.py` 同步导出三组 2D heatmap、单面板 3D `clean_surface` 和三联 3D `wireframe` 图。
+- 3D 图采用低饱和度高度分层配色，保留噪声底起伏，同时用红色峰值标记突出 random/optimized 目标峰。
+- 3D `clean_surface` 按 `no_ris`、`random_ris`、`optimized_ris` 分成三个命名清楚的单图导出，颜色条跟随单图放在右侧，避免三联 3D 轴外扩后压图。
+
 ## Stage 4：FMCW 回波模型与距离-多普勒检测验证
 
 本阶段新增单目标 FMCW beat signal 生成、距离-多普勒 FFT 和 RD 图检测验证。当前主线 RIS 相位优化器只使用 `fixed_grid_zf_snr`，不继续推进 ADMM/CD，也不复现图3/图4。
@@ -34,6 +41,15 @@ Stage 4 当前仍然是单目标、无 DOA、无 CFAR、无杂波、无真实近
 
 - 二维图是主证据：展示 random RIS 和 fixed-grid ZF-SNR RIS 的四目标 RD map，并量化每个目标的局部峰值提升。
 - 三维图是辅助视觉证据：展示优化前后四个谱峰的表面形态，不作为定量结论的唯一依据。
+
+## Stage 4.2：三维 RD 图版本约定
+
+`scripts/plot_stage4_nature_figures.py` 当前保留二维 RD 主图，同时导出两类三维图：
+
+- `stage4_rd_four_targets_nature_3d_clean_surface.*`：浅蓝单色峰区曲面，适合正文中需要 3D 辅助展示时使用。
+- `stage4_rd_four_targets_nature_3d_wireframe.*`：简洁线框峰区图，适合补充材料、方法说明或比较不同渲染方式。
+
+三维图统一使用 `vmax - 40 dB` 附近的低端动态范围压缩和降采样。低于该参考下限的谱值做软压缩，保留连续噪声底及其小起伏；渲染重点放在目标峰区，避免低幅噪声底被绘成高材质感地形表面。
 
 ## Stage 3.4：ZF-SNR 驱动优化器强化与公平稳定性验证
 

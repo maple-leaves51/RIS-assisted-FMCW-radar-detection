@@ -1,5 +1,11 @@
 # Debug Log
 
+## 2026-05-21 Stage 4.3 三维颜色条导出布局修正
+
+- 现象：`stage4_rd_four_targets_nature_3d_clean_surface` 的 Magnitude 颜色条仍压近 3D 子图，影响 optimized RIS 面板阅读。
+- 根因：三维坐标轴标签和标题在 `bbox_inches="tight"` 导出时会扩张整体边界，导致颜色条即使位于右侧 GridSpec 列，导出后仍被视觉压回图组内部。
+- 修复：将 `clean_surface` 改为 `no_ris`、`random_ris`、`optimized_ris` 三张单面板图；每张图使用自己的右侧颜色条，避免三联 3D 布局和颜色条互相挤压。
+
 ## 2026-05-20 Stage 4 range FFT 轴修正
 
 问题：最初的 Stage 4 单元测试中，目标距离 `25 m` 的 RD 峰值被检测到 `0 m`，测试失败。
@@ -47,6 +53,23 @@
 - 重新运行 `python scripts/plot_stage4_nature_figures.py`。
 - 输出 `stage4_rd_four_targets_nature_2d.*` 和 `stage4_rd_four_targets_nature_3d.*`。
 - Python 脚本通过 `py_compile`。
+
+## 2026-05-21 Stage 4.2 三维 RD 渲染整改
+
+问题：原三维 RD 图使用密集彩色 `plot_surface`，把低幅噪声底渲染成连续起伏地形，弱化了峰值位置和优化前后差异。
+
+修复：
+
+- 只修改 Python 绘图脚本，不改变 MATLAB 仿真数据。
+- 三维图使用 `vmax - 40 dB` 作为低端压缩参考；低于该参考下限的点做软压缩，保留连续噪声底及小起伏而不再设为 `NaN`。
+- 将三维采样密度降低到峰形仍可辨认的规模。
+- 新增 `clean_surface` 和 `wireframe` 两版输出。
+- clean surface 使用浅蓝单色曲面；wireframe 使用蓝色细线框；两版均保留红色峰值标记。
+
+验证：
+
+- 二维 RD 主图仍可正常导出。
+- Python 绘图脚本通过 `py_compile` 和实际运行。
 
 ## 2026-05-17 Stage 3.4 优化器公平性与运行时间调整
 
