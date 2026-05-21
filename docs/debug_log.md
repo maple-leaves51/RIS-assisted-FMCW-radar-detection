@@ -1,5 +1,12 @@
 # Debug Log
 
+## 2026-05-21 Stage 4.4 CFAR 图件缺失命中柱处理
+
+- 现象：全图 CA-CFAR 后，`No RIS` 组在四个真值邻域内没有关联命中；CFAR 柱状图若直接按三组共同峰值范围设置 `ylim`，缺失值会干扰图件生成。
+- 定位：这不是 CFAR 检测回退失败，而是当前遮挡 NLOS 基线按零目标回波建模后的预期结果；问题在于绘图逻辑没有先忽略未命中的 `NaN` 峰值。
+- 修复：`main/main_stage4_rd_detection.m` 的 CFAR 柱状图 y 轴范围改为基于有效峰值并使用 `omitnan` 处理，保留 no-RIS 未命中状态。
+- 验证：重新运行 Stage 4 主脚本后，`stage4_rd_detection_cfar_20260521_121642.png` 成功生成，no-RIS 未命中没有被局部峰回填。
+
 ## 2026-05-21 Stage 4.3 三维颜色条导出布局修正
 
 - 现象：`stage4_rd_four_targets_nature_3d_clean_surface` 的 Magnitude 颜色条仍压近 3D 子图，影响 optimized RIS 面板阅读。

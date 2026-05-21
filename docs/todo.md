@@ -1,5 +1,22 @@
 # TODO
 
+## Stage 4.4 完成状态
+
+### 已完成
+
+- [x] 新增 `functions/ca_cfar_2d.m`，在完整 RD 功率图上执行二维 CA-CFAR。
+- [x] 新增 `functions/detect_rd_targets_cfar.m`，实现全图 CFAR 峰提取和真值邻域关联。
+- [x] 新增 `tests/test_stage4_cfar_detection.m`，覆盖强峰检测和关联逻辑。
+- [x] 在 `main_stage4_rd_detection.m` 中保留局部峰检测，并新增独立 `cfar` 命名输出。
+- [x] 输出 CFAR MATLAB 快速检查图、CFAR Nature 2D/3D 图、`.mat` 和 `.csv` 数据。
+- [x] 验证 random RIS 与 optimized RIS 四目标均可被 CFAR 关联命中。
+- [x] 验证 optimized RIS 的 CFAR 目标峰值高于 random RIS。
+
+### 下一步建议
+
+- [ ] 增加 CFAR 参数扫描和多随机噪声/信道统计，避免只依赖单次受控样例。
+- [ ] 若后续加入 direct-path 或杂波模型，重新评估 `Pfa`、训练窗和保护窗。
+
 ## Stage 4.3 完成状态
 
 - [x] 增加无 RIS 对照组并保持 Stage 4 三类图同步。
@@ -24,8 +41,8 @@
 
 - [ ] 不实现 ADMM/CD。
 - [ ] 不复现图3/图4。
-- [ ] 不做多目标 RD 图。
-- [ ] 不做 DOA、CFAR、杂波或真实近场几何。
+- [x] 已完成当前四目标 RD 图和 CA-CFAR 检测分支。
+- [ ] 不做 DOA、杂波或真实近场几何。
 
 ### 下一步建议
 

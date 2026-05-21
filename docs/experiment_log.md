@@ -1,5 +1,45 @@
 # Experiment Log
 
+## 2026-05-21 Stage 4.4 全图 CA-CFAR 检测验证
+
+- 运行脚本：`main/main_stage4_rd_detection.m`、`scripts/plot_stage4_nature_figures.py`
+- 检测逻辑：完整 RD 功率图 CA-CFAR 检测，随后对 CFAR 局部峰做四目标真值邻域关联。
+- CFAR 参数：`trainingCells = [6,6]`、`guardCells = [2,2]`、`Pfa = 1e-4`、`localMaxRadiusCells = [1,1]`
+- 输出日志：`outputs/logs/stage4_rd_detection_20260521_121642.txt`
+- 输出数据：
+  - `outputs/data/stage4_rd_detection_cfar_20260521_121642.mat`
+  - `outputs/data/stage4_rd_four_targets_cfar_latest.mat`
+  - `outputs/data/stage4_rd_four_targets_cfar_detection_latest.csv`
+- 输出图件：
+  - `outputs/figures/stage4_rd_detection_cfar_20260521_121642.png`
+  - `outputs/figures/stage4_rd_detection_cfar_20260521_121642.fig`
+  - `outputs/figures/stage4_rd_four_targets_cfar_nature_2d.png/.svg`
+  - `outputs/figures/stage4_rd_four_targets_cfar_nature_3d_clean_surface_*.png/.svg`
+  - `outputs/figures/stage4_rd_four_targets_cfar_nature_3d_wireframe.png/.svg`
+
+CFAR 结果：
+
+| 组别 | 全图 CFAR 峰数 | 四目标关联命中数 |
+| --- | ---: | ---: |
+| no RIS | `4` | `0` |
+| random RIS | `7` | `4` |
+| optimized RIS | `7` | `4` |
+
+| 目标 | random CFAR peak dB | optimized CFAR peak dB | optimized vs random |
+| --- | ---: | ---: | ---: |
+| T1 | `-29.0675` | `-18.2766` | `10.7909 dB` |
+| T2 | `-30.3685` | `-19.5840` | `10.7845 dB` |
+| T3 | `-31.6786` | `-20.8907` | `10.7879 dB` |
+| T4 | `-33.2032` | `-22.4240` | `10.7792 dB` |
+
+验收结论：
+
+- local-peak 检测输出保留，CFAR 输出使用独立 `cfar` 命名。
+- random RIS 与 optimized RIS 的四个目标均被全图 CFAR 峰关联命中。
+- optimized RIS 的四目标 CFAR 峰值均高于 random RIS，提升约 `10.78 dB`。
+- `No RIS` 组在当前遮挡 NLOS 零目标回波模型下没有真值目标 CFAR 关联命中。
+- MATLAB CFAR 测试、Stage 4 FMCW RD 测试和 Python 绘图检查均通过。
+
 ## 2026-05-21 Stage 4.3 三组 RD 图复核
 
 - 运行脚本：`main/main_stage4_rd_detection.m`、`scripts/plot_stage4_nature_figures.py`。

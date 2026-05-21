@@ -73,20 +73,48 @@ optimizedDetection = detect_target_peaks(RDoptimizedDb, rangeAxis, velocityAxis,
 rdPeakImprovementVsNoRisDb = optimizedDetection.peakDb - noRisDetection.peakDb;
 rdPeakImprovementDb = optimizedDetection.peakDb - randomDetection.peakDb;
 
+cfarOptions = struct();
+cfarOptions.trainingCells = [6, 6];
+cfarOptions.guardCells = [2, 2];
+cfarOptions.pfa = 1e-4;
+cfarOptions.localMaxRadiusCells = [1, 1];
+cfarOptions.associationRangeHalfWidth_m = searchWindow.rangeHalfWidth_m;
+cfarOptions.associationVelocityHalfWidth_mps = searchWindow.velocityHalfWidth_m;
+noRisCfarDetection = detect_rd_targets_cfar(RDnoRis, rangeAxis, velocityAxis, targets, cfarOptions);
+randomCfarDetection = detect_rd_targets_cfar(RDrandom, rangeAxis, velocityAxis, targets, cfarOptions);
+optimizedCfarDetection = detect_rd_targets_cfar(RDoptimized, rangeAxis, velocityAxis, targets, cfarOptions);
+cfarPeakImprovementVsNoRisDb = optimizedCfarDetection.peakDb - noRisCfarDetection.peakDb;
+cfarPeakImprovementDb = optimizedCfarDetection.peakDb - randomCfarDetection.peakDb;
+
 rangePass = all(abs(optimizedDetection.peakRange_m - targets.range_m) <= searchWindow.rangeHalfWidth_m);
 velocityPass = all(abs(optimizedDetection.peakVelocity_mps - targets.velocity_mps) <= searchWindow.velocityHalfWidth_m);
 gainPass = optimizedGain > randomGain;
 rdPeakPass = all(rdPeakImprovementDb > 1);
 validationPassed = rangePass && velocityPass && gainPass && rdPeakPass;
+cfarRangePass = all(optimizedCfarDetection.hit & ...
+    abs(optimizedCfarDetection.peakRange_m - targets.range_m) <= searchWindow.rangeHalfWidth_m);
+cfarVelocityPass = all(optimizedCfarDetection.hit & ...
+    abs(optimizedCfarDetection.peakVelocity_mps - targets.velocity_mps) <= searchWindow.velocityHalfWidth_m);
+cfarRandomHitPass = all(randomCfarDetection.hit);
+cfarOptimizedHitPass = all(optimizedCfarDetection.hit);
+cfarPeakPass = all(cfarPeakImprovementDb(randomCfarDetection.hit & optimizedCfarDetection.hit) > 1);
+cfarValidationPassed = cfarRangePass && cfarVelocityPass && gainPass && ...
+    cfarRandomHitPass && cfarOptimizedHitPass && cfarPeakPass;
 
 timestamp = string(datetime("now", "Format", "yyyyMMdd_HHmmss"));
 pngPath = fullfile(figureDir, "stage4_rd_detection_" + timestamp + ".png");
 figPath = fullfile(figureDir, "stage4_rd_detection_" + timestamp + ".fig");
 logPath = fullfile(logDir, "stage4_rd_detection_" + timestamp + ".txt");
 dataPath = fullfile(dataDir, "stage4_rd_detection_" + timestamp + ".mat");
+cfarPngPath = fullfile(figureDir, "stage4_rd_detection_cfar_" + timestamp + ".png");
+cfarFigPath = fullfile(figureDir, "stage4_rd_detection_cfar_" + timestamp + ".fig");
+cfarDataPath = fullfile(dataDir, "stage4_rd_detection_cfar_" + timestamp + ".mat");
 
 create_stage4_figure(RDnoRisDb, RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
     targets, noRisDetection, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath);
+create_stage4_figure(RDnoRisDb, RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
+    targets, noRisCfarDetection, randomCfarDetection, optimizedCfarDetection, ...
+    cfarPeakImprovementDb, cfarPngPath, cfarFigPath, "CA-CFAR");
 
 detectionTable = table((1:numTargets).', targets.range_m(:), targets.velocity_mps(:), targets.alpha(:), ...
     noRisDetection.peakDb(:), randomDetection.peakDb(:), optimizedDetection.peakDb(:), ...
@@ -103,6 +131,23 @@ detectionTable = table((1:numTargets).', targets.range_m(:), targets.velocity_mp
 
 sourceDataPath = fullfile(dataDir, "stage4_rd_four_targets_latest.mat");
 sourceCsvPath = fullfile(dataDir, "stage4_rd_four_targets_detection_latest.csv");
+cfarSourceDataPath = fullfile(dataDir, "stage4_rd_four_targets_cfar_latest.mat");
+cfarSourceCsvPath = fullfile(dataDir, "stage4_rd_four_targets_cfar_detection_latest.csv");
+
+cfarDetectionTable = table((1:numTargets).', targets.range_m(:), targets.velocity_mps(:), targets.alpha(:), ...
+    noRisCfarDetection.hit(:), randomCfarDetection.hit(:), optimizedCfarDetection.hit(:), ...
+    noRisCfarDetection.peakDb(:), randomCfarDetection.peakDb(:), optimizedCfarDetection.peakDb(:), ...
+    cfarPeakImprovementVsNoRisDb(:), cfarPeakImprovementDb(:), ...
+    noRisCfarDetection.peakRange_m(:), randomCfarDetection.peakRange_m(:), optimizedCfarDetection.peakRange_m(:), ...
+    noRisCfarDetection.peakVelocity_mps(:), randomCfarDetection.peakVelocity_mps(:), optimizedCfarDetection.peakVelocity_mps(:), ...
+    optimizedCfarDetection.rangeError_m(:), optimizedCfarDetection.velocityError_mps(:), ...
+    VariableNames=["targetIdx", "trueRange_m", "trueVelocity_mps", "alpha", ...
+    "noRisCfarHit", "randomCfarHit", "optimizedCfarHit", ...
+    "noRisCfarPeakDb", "randomCfarPeakDb", "optimizedCfarPeakDb", ...
+    "cfarPeakImprovementVsNoRisDb", "cfarPeakImprovementVsRandomDb", ...
+    "noRisCfarPeakRange_m", "randomCfarPeakRange_m", "optimizedCfarPeakRange_m", ...
+    "noRisCfarPeakVelocity_mps", "randomCfarPeakVelocity_mps", "optimizedCfarPeakVelocity_mps", ...
+    "optimizedCfarRangeError_m", "optimizedCfarVelocityError_mps"]);
 
 save(dataPath, "params", "channelMeta", "Hsr", "Hrd", "vRandom", "vOptimized", ...
     "optInfo", "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
@@ -110,13 +155,27 @@ save(dataPath, "params", "channelMeta", "Hsr", "Hrd", "vRandom", "vOptimized", .
     "RDnoRis", "RDrandom", "RDoptimized", "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", ...
     "rangeAxis", "velocityAxis", "rdMeta", "echoMetaNoRis", "echoMetaRandom", ...
     "echoMetaOptimized", "noRisDetection", "randomDetection", "optimizedDetection", ...
-    "rdPeakImprovementVsNoRisDb", "rdPeakImprovementDb", "detectionTable", "validationPassed");
+    "rdPeakImprovementVsNoRisDb", "rdPeakImprovementDb", "detectionTable", "validationPassed", ...
+    "cfarOptions", "noRisCfarDetection", "randomCfarDetection", "optimizedCfarDetection", ...
+    "cfarPeakImprovementVsNoRisDb", "cfarPeakImprovementDb", "cfarDetectionTable", "cfarValidationPassed");
+save(cfarDataPath, "params", "channelMeta", "Hsr", "Hrd", "vRandom", "vOptimized", ...
+    "optInfo", "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
+    "targets", "echoNoisePower_W", "RDnoRis", "RDrandom", "RDoptimized", ...
+    "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", "rdMeta", ...
+    "cfarOptions", "noRisCfarDetection", "randomCfarDetection", "optimizedCfarDetection", ...
+    "cfarPeakImprovementVsNoRisDb", "cfarPeakImprovementDb", "cfarDetectionTable", "cfarValidationPassed");
 save(sourceDataPath, "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", ...
     "targets", "noRisDetection", "randomDetection", "optimizedDetection", ...
     "rdPeakImprovementVsNoRisDb", "rdPeakImprovementDb", ...
     "detectionTable", "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
     "gainImprovementDb", "validationPassed");
 writetable(detectionTable, sourceCsvPath);
+save(cfarSourceDataPath, "RDnoRisDb", "RDrandomDb", "RDoptimizedDb", "rangeAxis", "velocityAxis", ...
+    "targets", "noRisCfarDetection", "randomCfarDetection", "optimizedCfarDetection", ...
+    "cfarPeakImprovementVsNoRisDb", "cfarPeakImprovementDb", "cfarDetectionTable", ...
+    "randomGain", "optimizedGain", "randomMetrics", "optimizedMetrics", ...
+    "gainImprovementDb", "cfarOptions", "cfarValidationPassed");
+writetable(cfarDetectionTable, cfarSourceCsvPath);
 
 logLines = [
     "Stage 4 FMCW RD detection validation"
@@ -149,6 +208,23 @@ logLines = [
     "Saved data MAT: " + string(dataPath)
     "Saved Python source MAT: " + string(sourceDataPath)
     "Saved detection CSV: " + string(sourceCsvPath)
+    "CA-CFAR training cells: " + mat2str(cfarOptions.trainingCells)
+    "CA-CFAR guard cells: " + mat2str(cfarOptions.guardCells)
+    "CA-CFAR pfa: " + string(cfarOptions.pfa)
+    "No RIS CA-CFAR peak count / target hits: " + string(noRisCfarDetection.numCfarPeaks) + " / " + string(noRisCfarDetection.numAssociatedTargets)
+    "Random CA-CFAR peak count / target hits: " + string(randomCfarDetection.numCfarPeaks) + " / " + string(randomCfarDetection.numAssociatedTargets)
+    "Optimized CA-CFAR peak count / target hits: " + string(optimizedCfarDetection.numCfarPeaks) + " / " + string(optimizedCfarDetection.numAssociatedTargets)
+    "Random CA-CFAR peak dB: " + strjoin(string(randomCfarDetection.peakDb.'), ", ")
+    "Optimized CA-CFAR peak dB: " + strjoin(string(optimizedCfarDetection.peakDb.'), ", ")
+    "CA-CFAR peak improvement dB: " + strjoin(string(cfarPeakImprovementDb.'), ", ")
+    "CA-CFAR random hit pass: " + string(cfarRandomHitPass)
+    "CA-CFAR optimized hit pass: " + string(cfarOptimizedHitPass)
+    "CA-CFAR validation status: " + string(pass_fail(cfarValidationPassed))
+    "Saved CFAR figure PNG: " + string(cfarPngPath)
+    "Saved CFAR figure FIG: " + string(cfarFigPath)
+    "Saved CFAR data MAT: " + string(cfarDataPath)
+    "Saved CFAR Python source MAT: " + string(cfarSourceDataPath)
+    "Saved CFAR detection CSV: " + string(cfarSourceCsvPath)
     ];
 writelines(logLines, logPath);
 fprintf("%s\n", logLines);
@@ -200,7 +276,10 @@ end
 end
 
 function create_stage4_figure(RDnoRisDb, RDrandomDb, RDoptimizedDb, rangeAxis, velocityAxis, ...
-    targets, noRisDetection, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath)
+    targets, noRisDetection, randomDetection, optimizedDetection, rdPeakImprovementDb, pngPath, figPath, detectorName)
+if nargin < 13
+    detectorName = "Local peak";
+end
 fig = figure("Visible", "off", "Position", [100, 100, 1500, 720]);
 tiledlayout(1, 4);
 
@@ -239,11 +318,12 @@ targetLabels = categorical("T" + string(1:numel(targets.range_m)), ...
     "T" + string(1:numel(targets.range_m)), "Ordinal", true);
 bar(targetLabels, [noRisDetection.peakDb(:), randomDetection.peakDb(:), optimizedDetection.peakDb(:)]);
 grid on; ylabel("Local target peak (dB)");
-title("Target peak comparison (mean +" + compose("%.2f dB", mean(rdPeakImprovementDb)) + ")");
-ylim([min([noRisDetection.peakDb(:); randomDetection.peakDb(:); optimizedDetection.peakDb(:)]) - 5, 0]);
+title(detectorName + " target peak comparison (mean +" + compose("%.2f dB", mean(rdPeakImprovementDb, "omitnan")) + ")");
+peakFloorDb = min([noRisDetection.peakDb(:); randomDetection.peakDb(:); optimizedDetection.peakDb(:)], [], "omitnan");
+ylim([peakFloorDb - 5, 0]);
 legend(["no RIS", "random", "optimized"], "Location", "southoutside", "Orientation", "horizontal");
 
-sgtitle("Stage 4 four-target range-Doppler detection");
+sgtitle("Stage 4 four-target range-Doppler detection - " + detectorName);
 saveas(fig, pngPath);
 savefig(fig, figPath);
 close(fig);

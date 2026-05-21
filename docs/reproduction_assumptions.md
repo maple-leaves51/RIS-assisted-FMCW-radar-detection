@@ -1,5 +1,13 @@
 # Reproduction Assumptions
 
+## Stage 4.4：CA-CFAR 检测合理复现假设
+
+1. 当前检测分支采用二维 CA-CFAR，输入为 RD 复谱的线性功率 `abs(RD_complex).^2`，而不是 dB 图。
+2. CFAR 训练窗、保护窗和 `Pfa` 先按当前四目标受控仿真调到可稳定工作：`trainingCells = [6,6]`、`guardCells = [2,2]`、`Pfa = 1e-4`。这些值属于当前工程检测假设，不是论文给定参数。
+3. 真值距离和速度邻域只用于检测后关联、统计命中数和误差验收；CFAR 本身始终在完整 RD 图上运行。
+4. 如果某个目标邻域内没有 CFAR 候选峰，代码保留 `hit = false` 和缺失峰值，不使用局部最大值回填为 CFAR 命中。
+5. 当前 `No RIS` 组仍是遮挡 NLOS 零目标回波基线，因此其全图 CFAR 候选峰可能来自噪声，四个真值目标关联未命中属于当前模型下的合理结果。
+
 ## Stage 4.3：无 RIS 对照组合理复现假设
 
 1. 当前 Stage 4 主场景仍是 RIS 辅助非视距探测，尚未加入独立 direct-path 回波链路。
@@ -8,7 +16,7 @@
 
 ## Stage 4：FMCW RD 检测合理复现假设
 
-1. Stage 4 第一版只做单目标检测验证，不引入 DOA、多目标、CFAR、杂波、真实近场几何或 ADMM/CD。
+1. Stage 4 第一版从单目标 smoke validation 起步；当前后续分支已增加四目标图和 CA-CFAR 检测，但仍不引入 DOA、杂波、真实近场几何或 ADMM/CD。
 
 2. 当前回波模型是解调后的复数 beat signal，不模拟完整发射 chirp、传播延迟、混频和低通滤波链路。该简化用于先验证距离-多普勒轴、目标峰值位置和 RIS/ZF 增益对 RD 峰值的影响。
 

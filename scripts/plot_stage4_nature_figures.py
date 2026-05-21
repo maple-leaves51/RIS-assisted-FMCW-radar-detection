@@ -17,6 +17,7 @@ from scipy.io import loadmat
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = PROJECT_ROOT / "outputs" / "data" / "stage4_rd_four_targets_latest.mat"
+CFAR_DATA_PATH = PROJECT_ROOT / "outputs" / "data" / "stage4_rd_four_targets_cfar_latest.mat"
 FIGURE_DIR = PROJECT_ROOT / "outputs" / "figures"
 HEIGHT_CMAP = LinearSegmentedColormap.from_list(
     "rd_height_layers",
@@ -55,13 +56,24 @@ def export_figure(fig: mpl.figure.Figure, stem: str, *, tight_bbox: bool = True)
     base = FIGURE_DIR / stem
     save_kwargs = {"bbox_inches": "tight"} if tight_bbox else {}
     fig.savefig(base.with_suffix(".svg"), **save_kwargs)
-    fig.savefig(base.with_suffix(".pdf"), **save_kwargs)
+    #fig.savefig(base.with_suffix(".pdf"), **save_kwargs)
     fig.savefig(base.with_suffix(".png"), dpi=600, **save_kwargs)
-    fig.savefig(base.with_suffix(".tiff"), dpi=600, **save_kwargs)
+    #fig.savefig(base.with_suffix(".tiff"), dpi=600, **save_kwargs)
 
 
-def load_source() -> dict[str, object]:
-    return loadmat(DATA_PATH, squeeze_me=True, struct_as_record=False)
+def load_source(path: Path = DATA_PATH) -> dict[str, object]:
+    return loadmat(path, squeeze_me=True, struct_as_record=False)
+
+
+def adapt_cfar_source(data: dict[str, object]) -> dict[str, object]:
+    """Map CFAR-specific MATLAB source fields onto the common plotting contract."""
+    adapted = dict(data)
+    adapted["noRisDetection"] = data["noRisCfarDetection"]
+    adapted["randomDetection"] = data["randomCfarDetection"]
+    adapted["optimizedDetection"] = data["optimizedCfarDetection"]
+    adapted["rdPeakImprovementVsNoRisDb"] = data["cfarPeakImprovementVsNoRisDb"]
+    adapted["rdPeakImprovementDb"] = data["cfarPeakImprovementDb"]
+    return adapted
 
 
 def crop_rd(
@@ -134,7 +146,7 @@ def draw_heatmap(
     return image
 
 
-def make_2d_figure(data: dict[str, object]) -> None:
+def make_2d_figure(data: dict[str, object], stem: str = "stage4_rd_four_targets_nature_2d") -> None:
     range_axis = np.asarray(data["rangeAxis"], dtype=float).reshape(-1)
     velocity_axis = np.asarray(data["velocityAxis"], dtype=float).reshape(-1)
     rd_no_ris = np.asarray(data["RDnoRisDb"], dtype=float)
@@ -192,14 +204,16 @@ def make_2d_figure(data: dict[str, object]) -> None:
     ax_e.set_xticklabels([f"T{i}" for i in target_ids])
     ax_e.set_ylabel("Gain (dB)")
     ax_e.set_title(f"Gain, mean {improvement_vs_random.mean():.2f} dB vs random")
-    ax_e.set_ylim(0, max(12, improvement_vs_no_ris.max() + 1))
+    finite_vs_no_ris = improvement_vs_no_ris[np.isfinite(improvement_vs_no_ris)]
+    gain_ceiling = finite_vs_no_ris.max() + 1 if finite_vs_no_ris.size else improvement_vs_random.max() + 1
+    ax_e.set_ylim(0, max(12, gain_ceiling))
     ax_e.legend(loc="upper right", fontsize=5.6)
     ax_e.grid(axis="y", color="#D9D9D9", lw=0.45)
 
     for ax, label in zip([ax_a, ax_b, ax_c, ax_d, ax_e], ["a", "b", "c", "d", "e"]):
         add_panel_label(ax, label)
 
-    export_figure(fig, "stage4_rd_four_targets_nature_2d")
+    export_figure(fig, stem)
     plt.close(fig)
 
 
@@ -354,7 +368,10 @@ def shared_3d_limits(
     return floor_db, zlim
 
 
-def make_clean_surface_panels(data: dict[str, object]) -> None:
+def make_clean_surface_panels(
+    data: dict[str, object],
+    stem_prefix: str = "stage4_rd_four_targets_nature_3d_clean_surface",
+) -> None:
     range_axis = np.asarray(data["rangeAxis"], dtype=float).reshape(-1)
     velocity_axis = np.asarray(data["velocityAxis"], dtype=float).reshape(-1)
     rd_no_ris = np.asarray(data["RDnoRisDb"], dtype=float)
@@ -377,11 +394,14 @@ def make_clean_surface_panels(data: dict[str, object]) -> None:
         cbar.set_label("Magnitude (dB)")
         cbar.ax.tick_params(length=2.2, width=0.6, labelsize=5.8)
         fig.subplots_adjust(left=0.00, right=0.92, bottom=0.03, top=0.92)
-        export_figure(fig, f"stage4_rd_four_targets_nature_3d_clean_surface_{stem_suffix}")
+        export_figure(fig, f"{stem_prefix}_{stem_suffix}")
         plt.close(fig)
 
 
-def make_clean_surface_comparison_figure(data: dict[str, object]) -> None:
+def make_clean_surface_comparison_figure(
+    data: dict[str, object],
+    stem: str = "stage4_rd_four_targets_nature_3d_clean_surface_comparison",
+) -> None:
     """Create one 1x3 clean-surface comparison figure with one compact shared colorbar.
 
     This figure keeps the same z-axis limits, colormap and display floor for
@@ -430,11 +450,11 @@ def make_clean_surface_comparison_figure(data: dict[str, object]) -> None:
     cbar.outline.set_linewidth(0.55)
 
     fig.subplots_adjust(left=0.00, right=0.905, bottom=0.03, top=0.93)
-    export_figure(fig, "stage4_rd_four_targets_nature_3d_clean_surface_comparison")
+    export_figure(fig, stem)
     plt.close(fig)
 
 
-def make_3d_figure(data: dict[str, object], variant: str) -> None:
+def make_3d_figure(data: dict[str, object], variant: str, stem: str | None = None) -> None:
     range_axis = np.asarray(data["rangeAxis"], dtype=float).reshape(-1)
     velocity_axis = np.asarray(data["velocityAxis"], dtype=float).reshape(-1)
     rd_no_ris = np.asarray(data["RDnoRisDb"], dtype=float)
@@ -461,7 +481,9 @@ def make_3d_figure(data: dict[str, object], variant: str) -> None:
     ax_b.text2D(-0.02, 0.98, "b", transform=ax_b.transAxes, fontsize=9, fontweight="bold")
     ax_c.text2D(-0.02, 0.98, "c", transform=ax_c.transAxes, fontsize=9, fontweight="bold")
     fig.subplots_adjust(left=0.00, right=0.99, bottom=0.03, top=0.93)
-    export_figure(fig, f"stage4_rd_four_targets_nature_3d_{variant}")
+    if stem is None:
+        stem = f"stage4_rd_four_targets_nature_3d_{variant}"
+    export_figure(fig, stem)
     plt.close(fig)
 
 
@@ -472,6 +494,15 @@ def main() -> None:
     make_clean_surface_panels(data)
     make_clean_surface_comparison_figure(data)
     make_3d_figure(data, "wireframe")
+    if CFAR_DATA_PATH.exists():
+        cfar_data = adapt_cfar_source(load_source(CFAR_DATA_PATH))
+        make_2d_figure(cfar_data, "stage4_rd_four_targets_cfar_nature_2d")
+        make_clean_surface_panels(cfar_data, "stage4_rd_four_targets_cfar_nature_3d_clean_surface")
+        make_clean_surface_comparison_figure(
+            cfar_data,
+            "stage4_rd_four_targets_cfar_nature_3d_clean_surface_comparison",
+        )
+        make_3d_figure(cfar_data, "wireframe", "stage4_rd_four_targets_cfar_nature_3d_wireframe")
     print(f"Saved Nature-style figures under {FIGURE_DIR}")
 
 

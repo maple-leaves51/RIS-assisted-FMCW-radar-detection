@@ -1,5 +1,42 @@
 # Paper Formula Notes
 
+## Stage 4.4：二维 CA-CFAR 与目标关联
+
+CFAR 检测在 RD 线性功率域执行：
+
+```text
+P_RD[k,l] = |RD_complex[k,l]|^2
+noise_hat[k,l] = mean(training cells around CUT)
+threshold[k,l] = alpha_cfar * noise_hat[k,l]
+detection[k,l] = P_RD[k,l] > threshold[k,l]
+```
+
+对 CA-CFAR，当前代码按训练单元数 `Ntrain` 和虚警概率 `Pfa` 使用：
+
+```text
+alpha_cfar = Ntrain * (Pfa^(-1/Ntrain) - 1)
+```
+
+Stage 4.4 当前流程为：
+
+```text
+1. 对完整 RD 功率图执行二维 CA-CFAR
+2. 在 CFAR 检测单元中提取局部极大值
+3. 在真值目标的距离/速度邻域内关联最近的 CFAR 峰
+4. 关联成功才记录目标 CFAR 峰值、距离误差和速度误差
+```
+
+当前四目标脚本使用的 CFAR 参数为：
+
+```text
+trainingCells = [6, 6]
+guardCells = [2, 2]
+Pfa = 1e-4
+localMaxRadiusCells = [1, 1]
+```
+
+其中真值邻域只用于关联和验收，不参与 CFAR 门限计算，也不替代全图检测结果。
+
 ## Stage 4.3：三组 RD 幅度约定
 
 ```text

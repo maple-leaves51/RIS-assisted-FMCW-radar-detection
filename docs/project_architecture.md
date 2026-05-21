@@ -1,5 +1,21 @@
 # Project Architecture
 
+## Stage 4.4：全图 CA-CFAR 检测与真值邻域关联
+
+本轮在保留 Stage 4 局部峰值检测输出的基础上，增加全图 CA-CFAR 检测链路。CA-CFAR 先在完整 RD 功率图上产生检测单元和局部极大值，再把检测峰与四个真值目标邻域关联；关联失败时保留未命中状态，不用真值邻域局部峰替代 CFAR 结果。
+
+新增或修改文件：
+
+- `functions/ca_cfar_2d.m`：在线性 RD 功率域实现二维 CA-CFAR，输出检测掩膜、门限图、噪声估计图和训练单元元数据。
+- `functions/detect_rd_targets_cfar.m`：封装“全图 CFAR 检测 + CFAR 峰提取 + 真值邻域关联”流程，输出每个目标的关联结果和全图候选峰。
+- `tests/test_stage4_cfar_detection.m`：验证强目标单元可被 CA-CFAR 检出，并验证关联逻辑只使用全图 CFAR 峰。
+- `main/main_stage4_rd_detection.m`：保留原有局部峰值检测，同时增加无 RIS、random RIS、optimized RIS 三组 CFAR 检测结果、CFAR PASS/FAIL 日志和 `cfar` 命名输出。
+- `scripts/plot_stage4_nature_figures.py`：读取 `stage4_rd_four_targets_cfar_latest.mat`，导出与现有 Stage 4 风格同步的 CFAR Nature 2D/3D 图。
+- `outputs/data/stage4_rd_four_targets_cfar_latest.mat` 与 `stage4_rd_four_targets_cfar_detection_latest.csv`：保存 CFAR 绘图源数据和目标关联表。
+- `outputs/figures/stage4_rd_detection_cfar_*.png/.fig` 与 `stage4_rd_four_targets_cfar_nature_*`：保存 MATLAB CFAR 快速检查图和 Python 图件。
+
+当前 CFAR 分支用于验证四目标 RD 检测性能，不改变 Stage 4 的 FMCW 回波模型、RIS 增益链路和原有局部峰值图件。
+
 ## Stage 4.3：三组 RD 图形链路更新
 
 - `main/main_stage4_rd_detection.m` 同步输出无 RIS、随机相位 RIS、固定网格 ZF-SNR 优化 RIS 三组四目标 RD 数据。
@@ -24,7 +40,7 @@
 - `outputs/logs/stage4_rd_detection_*.txt`：保存峰值检测和 PASS/FAIL 日志。
 - `outputs/data/stage4_rd_detection_*.mat`：保存回波、RD 谱、坐标轴、检测结果和参数。
 
-Stage 4 当前仍然是单目标、无 DOA、无 CFAR、无杂波、无真实近场几何的基础检测验证。后续若扩展到图5/图6，需要在该基础上再增加多目标、检测门限和更严格的物理几何建模。
+Stage 4 基础链路已从单目标扩展到四目标，并增加局部峰值检测与 CA-CFAR 检测分支。当前仍无 DOA、无杂波、无真实近场几何；后续若扩展到图5/图6，需要继续明确检测门限统计、目标幅度设定和物理几何建模。
 
 ## Stage 4.1：四目标 RD 验证与 Nature 风格图
 
