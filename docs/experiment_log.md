@@ -1,5 +1,62 @@
 # Experiment Log
 
+## 2026-05-22 Stage 4.6 N_RIS 与 ZF-SNR 增益正式大样本实验
+
+- 运行主函数：`main_stage4_snr_gain_vs_nris()`
+- 扫描轴：`NrisAxis = 4:4:64`，共 `16` 个 RIS 单元数点。
+- Monte Carlo：每个 `N_RIS` 点 `100` 次，共 `1600` 个 trial。
+- 主优化器：固定网格 ZF-SNR 相位搜索，`phaseGridSize = 16`，`numStarts = 3`，`maxSweeps = 4`。
+- 输出图：`outputs/figures/stage4_snr_gain_vs_nris_20260522_085344.png`
+- 输出数据：`outputs/data/stage4_snr_gain_vs_nris_20260522_085344.mat`
+- 输出日志：`outputs/logs/stage4_snr_gain_vs_nris_20260522_085344.txt`
+- 日志格式：逐 trial 打印 random SNR、optimized SNR、SNR gain、`G_ZF` gain、条件数和 runtime，长跑时可直接在 MATLAB 命令行观察趋势。
+
+正式统计摘要：
+
+| 指标 | 结果 |
+| --- | --- |
+| 平均 SNR 增益最小值 | `8.2752 dB`，出现在 `N_RIS = 4` |
+| 平均 SNR 增益最大值 | `17.4857 dB`，出现在 `N_RIS = 60` |
+| `N_RIS = 64` 平均 SNR 增益 | `17.1692 dB` |
+| `N_RIS = 64` random SNR mean | `-72.1103 dB` |
+| `N_RIS = 64` optimized SNR mean | `-54.9411 dB` |
+| 所有 `N_RIS` 点 optimized mean SNR 是否高于 random | `true` |
+| 汇总是否有限 | `true` |
+
+结论：
+
+- 相比 random RIS，fixed-grid ZF-SNR optimized RIS 在全部 `16` 个 `N_RIS` 点上都给出正平均增益。
+- 随着 `N_RIS` 增大，random 与 optimized 的绝对 ZF 输出 SNR 整体抬升，优化增益均值也由约 `8 dB` 上升到约 `17 dB` 区间。
+- 增益曲线存在 Monte Carlo 波动和局部回落，不应把它解释为严格单调理论曲线；大样本结果支持“更多 RIS 单元在当前模型下整体提升 ZF-SNR 可优化空间”这一工程结论。
+- 当前正式实验已经满足“横坐标更密、样本更丰富、输出可追踪”的要求。
+
+## 2026-05-21 Stage 4.6 N_RIS 与 ZF-SNR 增益扫描缩减验证
+
+- 运行主函数：`main_stage4_snr_gain_vs_nris(opts)`
+- 缩减验证参数：`NrisAxis = [4, 8, 12, 16]`，`numTrials = 3`
+- 正式默认参数：`NrisAxis = 4:4:64`，`numTrials = 100`，`phaseGridSize = 16`，`numStarts = 3`，`maxSweeps = 4`
+- 主优化器：`fixed_grid` 坐标相位搜索，`objectiveType = "zf_snr"`
+- 比较对象：同一 trial 下的 random RIS 与 fixed-grid optimized RIS
+- 输出图：`outputs/figures/stage4_snr_gain_vs_nris_validation_20260521.png`
+- 输出数据：`outputs/data/stage4_snr_gain_vs_nris_validation_20260521.mat`
+- 输出日志：`outputs/logs/stage4_snr_gain_vs_nris_validation_20260521.txt`
+
+缩减验证统计：
+
+| N_RIS | random SNR mean dB | optimized SNR mean dB | mean SNR gain dB | mean runtime s |
+| ---: | ---: | ---: | ---: | ---: |
+| `4` | `-109.3906` | `-99.9628` | `9.4278` | `0.1106` |
+| `8` | `-92.2718` | `-80.0387` | `12.2330` | `0.2882` |
+| `12` | `-89.5187` | `-76.0909` | `13.4279` | `0.4356` |
+| `16` | `-82.7750` | `-73.3829` | `9.3921` | `0.6248` |
+
+验收结论：
+
+- 新脚本可保存 `.png`、`.mat` 和 `.txt`，命令行逐 trial 统计正常打印。
+- 缩减验证中每个 `N_RIS` 点的优化相位平均 ZF-SNR 均高于随机相位。
+- 在当前固定噪声定义下，`G_ZF` 增益与 ZF-SNR 增益一致。
+- 3-trial 验证只用于检查链路，不用于判断正式曲线的平滑性和饱和趋势；正式趋势需要运行默认 `100` 次 Monte Carlo。
+
 ## 2026-05-21 Stage 4.5 CA-CFAR Pd-vs-SNR quick 验证
 
 - 运行主函数：`main_stage4_pd_vs_snr("quick")`

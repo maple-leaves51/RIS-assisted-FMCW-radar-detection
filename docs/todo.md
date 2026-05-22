@@ -1,5 +1,21 @@
 # TODO
 
+## Stage 4.6 状态：RIS 单元数与 ZF-SNR 增益扫描
+
+### 已完成
+
+- [x] 将 `N_RIS` 扫描主指标改为 ZF 输出 SNR 和 `G_ZF` 增益，不再用四目标 `Pd` 作为该实验主目标。
+- [x] 新增 `main/main_stage4_snr_gain_vs_nris.m`，支持密集默认横轴和长 Monte Carlo 统计。
+- [x] 新增 `tests/test_stage4_snr_gain_vs_nris.m` 并通过缩减轴 smoke test。
+- [x] 输出逐 trial 打印、`.mat` 数据、`.png` 图和 `.txt` 日志。
+- [x] 完成 `[4, 8, 12, 16]`、每点 `3` 次的保存输出验证。
+
+### 下一步建议
+
+- [x] 已运行默认正式扫描 `main_stage4_snr_gain_vs_nris()`，使用 `N_RIS = 4:4:64`、每点 `100` 次统计正式曲线。
+- [x] 已检查正式曲线的 SNR 增益均值、方差带和运行时间趋势；当前全部 `N_RIS` 点平均增益为正，局部回落保留为 Monte Carlo 波动。
+- [ ] 若大 `N_RIS` 运行时间过高，再决定是否并行化 trial 或把固定网格搜索参数拆成“诊断”和“正式”两档。
+
 ## Stage 4.5 完成状态
 
 ### 已完成

@@ -1,5 +1,12 @@
 # Debug Log
 
+## 2026-05-21 Stage 4.6 运行时汇总字段命名修正
+
+- 现象：`tests/test_stage4_snr_gain_vs_nris.m` 首次运行在 `main_stage4_snr_gain_vs_nris.m` 中报错，提示无法识别汇总字段 `runtimeMean_s`。
+- 定位：原始矩阵字段命名为 `runtime_s`，通用汇总器生成的是 `runtime_sMean/runtime_sStd`；主脚本验收和测试读取的是 `runtimeMean_s`，两种命名口径不一致。
+- 修复：在 `summarize_raw` 中保留通用汇总字段，同时显式增加 `runtimeMean_s` 与 `runtimeStd_s` 别名，并让图和日志统一读取该别名。
+- 复核：MATLAB 会话清理函数缓存后，`tests/test_stage4_snr_gain_vs_nris.m` 通过，Code Analyzer 对新主脚本无 issue。
+
 ## 2026-05-21 Stage 4.4 CFAR 图件缺失命中柱处理
 
 - 现象：全图 CA-CFAR 后，`No RIS` 组在四个真值邻域内没有关联命中；CFAR 柱状图若直接按三组共同峰值范围设置 `ylim`，缺失值会干扰图件生成。

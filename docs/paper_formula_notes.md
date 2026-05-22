@@ -1,5 +1,37 @@
 # Paper Formula Notes
 
+## Stage 4.6：N_RIS 扫描指标定义
+
+当前 RIS 单元数扫描不把四目标检测概率作为主指标，而是直接在等效信道和 ZF 归一化链路上比较相位优化收益：
+
+```text
+Heff(v) = Hsr' * diag(v) * Hrd * diag(v)' * Hsr
+B(v) = normalized ZF precoder from pinv(Heff(v))
+G_ZF(v) = ||Heff(v) * B(v)||_F^2
+SNR_ZF(v) = G_ZF(v) / noisePower_W
+```
+
+在同一个 `N_RIS`、同一个 trial、同一组 `Hsr/Hrd` 上定义：
+
+```text
+SNR gain dB = SNR_ZF(v_opt)_dB - SNR_ZF(v_random)_dB
+G_ZF gain dB = 10*log10(G_ZF(v_opt) / G_ZF(v_random))
+```
+
+当前 `noisePower_W` 在两个方法之间保持一致，因此 `SNR gain dB` 与 `G_ZF gain dB` 数值应一致；两者同时保存，是为了区分“信道输出功率指标”和“带噪声归一化后的 SNR 指标”。
+
+维度随 `N_RIS = Nr` 同步变化：
+
+```text
+Hsr: Nr x Nt
+Hrd: Nr x Nr
+v:   Nr x 1
+Heff: Nt x Nt
+B: Nt x Nt
+```
+
+该实验的优化器目标仍是 `evaluate_ris_objective(..., "zf_snr")`，不是 `Pd`、不是 `path_gain`，也不是 quadratic ADMM 代理目标。
+
 ## Stage 4.5：Pd-vs-SNR 统计定义
 
 当前检测概率实验对每个回波 SNR 点和每个目标统计 CA-CFAR 关联命中：

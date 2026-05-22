@@ -1,5 +1,17 @@
 # Project Architecture
 
+## Stage 4.6：RIS 单元数与 ZF-SNR 增益扫描
+
+本轮把 `N_RIS` 扫描从检测概率实验中拆出，改为直接观察当前主线算法在等效信道层的 ZF 输出能力。该实验不统计四目标 `Pd`，主指标为随机 RIS 与固定网格 ZF-SNR 优化 RIS 的输出 SNR 和 `G_ZF` 增益。
+
+- `main/main_stage4_snr_gain_vs_nris.m`：新增正式扫描主函数。默认扫描 `N_RIS = 4:4:64`，每点 `100` 次 Monte Carlo，使用 `fixed_grid`、`objectiveType = "zf_snr"`、`phaseGridSize = 16`、`numStarts = 3`、`maxSweeps = 4`。
+- `tests/test_stage4_snr_gain_vs_nris.m`：新增缩减轴 smoke test，检查结果结构、运行时统计字段和默认固定网格设置。
+- `outputs/data/stage4_snr_gain_vs_nris_*.mat`：保存每个 `N_RIS` 与 trial 的随机/优化 ZF-SNR、`G_ZF`、条件数、ZF raw power、运行时间和汇总曲线。
+- `outputs/figures/stage4_snr_gain_vs_nris_*.png`：保存 ZF 输出 SNR、SNR 增益、`G_ZF` 增益和优化器运行时间随 `N_RIS` 变化的四面板图。
+- `outputs/logs/stage4_snr_gain_vs_nris_*.txt`：保存逐 trial 命令行进度和统计摘要，便于正式长跑时观察趋势。
+
+该脚本仅复用已有 `generate_channels.m`、`evaluate_ris_objective.m` 和 `optimize_ris_objective_driven.m`，没有改动 Stage 1-4 的 RD 与 Pd-vs-SNR 主流程。
+
 ## Stage 4.5：CA-CFAR 检测概率 Pd-vs-SNR
 
 本轮新增 Stage 4 Monte Carlo 检测概率脚本，用于比较 NLOS `No RIS`、`Random RIS` 和 `Fixed-grid ZF-SNR optimized RIS` 在不同回波 SNR 下的四目标 CA-CFAR 检测概率。
